@@ -15,6 +15,7 @@ import Operacoes from "./pages/Operacoes";
 import OperacaoDetalhes from "./pages/OperacaoDetalhes";
 import Configuracoes from "./pages/Configuracoes";
 import Contratos from "./pages/Contratos";
+import Cobrancas from "./pages/Cobrancas";
 
 const queryClient = new QueryClient();
 
@@ -35,15 +36,7 @@ const App = () => (
             <Route path="/operacoes" element={<Operacoes />} />
             <Route path="/operacoes/:id" element={<OperacaoDetalhes />} />
             <Route path="/contratos" element={<Contratos />} />
-            <Route
-              path="/cobrancas"
-              element={
-                <Placeholder
-                  title="Cobranças"
-                  description="Acompanhamento de vencimentos e baixas manuais."
-                />
-              }
-            />
+            <Route path="/cobrancas" element={<Cobrancas />} />
             <Route
               path="/relatorios"
               element={
