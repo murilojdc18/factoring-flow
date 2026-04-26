@@ -200,6 +200,11 @@ export function TituloDetalhes({ titulo }: { titulo: Titulo }) {
           </p>
         </div>
       )}
+      <AnexosSection
+        entidadeTipo="titulo"
+        entidadeId={titulo.id}
+        titulo="Documentos do título"
+      />
     </div>
   );
 }
