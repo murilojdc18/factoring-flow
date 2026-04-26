@@ -7,6 +7,7 @@ import NotFound from "./pages/NotFound.tsx";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Placeholder from "./pages/Placeholder";
+import Clientes from "./pages/Clientes";
 
 const queryClient = new QueryClient();
 
@@ -20,16 +21,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route
-              path="/clientes"
-              element={
-                <Placeholder
-                  title="Clientes / Cedentes"
-                  description="Cadastro e gestão dos cedentes que cedem títulos."
-                  primaryAction="Novo cedente"
-                />
-              }
-            />
+            <Route path="/clientes" element={<Clientes />} />
             <Route
               path="/sacados"
               element={
