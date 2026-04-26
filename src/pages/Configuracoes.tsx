@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Info, Save, RotateCcw } from "lucide-react";
+import { Info, Save, RotateCcw, ShieldCheck, ArrowRight, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
   Card,
@@ -22,6 +23,13 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import {
+  alvosDisponiveis,
+  alvosSemAnalise,
+  useCompliance,
+} from "@/data/mockCompliance";
+import { RiscoBadge } from "@/components/compliance/RiscoBadge";
 
 interface ParametrosFinanceiros {
   taxaFatorMensal: number;
@@ -53,6 +61,14 @@ const DEFAULTS: ParametrosFinanceiros = {
 export default function Configuracoes() {
   const [params, setParams] = useState<ParametrosFinanceiros>(DEFAULTS);
   const [salvo, setSalvo] = useState<ParametrosFinanceiros>(DEFAULTS);
+  const { politicas, analises } = useCompliance();
+  const semClientes = alvosSemAnalise("Cliente").length;
+  const semOps = alvosSemAnalise("Operação").length;
+  const totalClientes = alvosDisponiveis("Cliente").length;
+  const totalOps = alvosDisponiveis("Operação").length;
+  const altos = analises.filter((a) => a.nivelRisco === "Alto").length;
+  const medios = analises.filter((a) => a.nivelRisco === "Médio").length;
+  const baixos = analises.filter((a) => a.nivelRisco === "Baixo").length;
 
   const update = <K extends keyof ParametrosFinanceiros>(
     key: K,
@@ -249,6 +265,108 @@ export default function Configuracoes() {
           Existem alterações não salvas.
         </p>
       )}
+
+      {/* ============= Compliance ============= */}
+      <Card className="mt-6 shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            Compliance
+          </CardTitle>
+          <CardDescription>
+            Resumo dos controles internos de PLD/FT. Para checklists e
+            registros completos, acesse o módulo dedicado.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {(semClientes > 0 || semOps > 0) && (
+            <Alert className="border-warning/40 bg-warning/10">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <AlertTitle>Pendências de análise</AlertTitle>
+              <AlertDescription>
+                {semClientes} de {totalClientes} cliente(s) e {semOps} de{" "}
+                {totalOps} operação(ões) sem análise registrada.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-md border bg-muted/30 p-3">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Análises registradas
+              </div>
+              <div className="mt-1 text-2xl font-bold text-foreground">
+                {analises.length}
+              </div>
+            </div>
+            <div className="rounded-md border bg-muted/30 p-3">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Distribuição de risco
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <RiscoBadge nivel="Baixo" />
+                <span className="text-sm text-muted-foreground">{baixos}</span>
+                <RiscoBadge nivel="Médio" />
+                <span className="text-sm text-muted-foreground">{medios}</span>
+                <RiscoBadge nivel="Alto" />
+                <span className="text-sm text-muted-foreground">{altos}</span>
+              </div>
+            </div>
+            <div className="rounded-md border bg-muted/30 p-3">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Políticas ativas
+              </div>
+              <div className="mt-1 text-2xl font-bold text-foreground">
+                {politicas.filter((p) => p.ativa).length}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-foreground">
+              Políticas internas
+            </h3>
+            <ul className="space-y-2">
+              {politicas.map((p) => (
+                <li
+                  key={p.id}
+                  className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 p-3"
+                >
+                  <div>
+                    <div className="text-sm font-medium text-foreground">
+                      {p.titulo}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {p.descricao}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={p.ativa ? "default" : "secondary"}
+                    className="shrink-0"
+                  >
+                    {p.ativa ? "Ativa" : "Inativa"}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <Separator />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Registros internos. Não substituem assessoria jurídica, contábil
+              ou de compliance, e não geram comunicação ao COAF.
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/compliance">
+                Abrir módulo Compliance
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
