@@ -11,6 +11,7 @@ import {
   Sparkles,
   Code2,
   FileSignature,
+  Download,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +59,7 @@ import {
   STATUS_DOCUMENTO,
 } from "@/data/mockDocumentosGerados";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
+import { exportarDocumentoPdf } from "@/lib/exportarPdf";
 import { documentosStore, useDocumentos } from "@/lib/documentosStore";
 
 type ModalState =
@@ -338,6 +340,17 @@ export default function Contratos() {
                         <Button variant="ghost" size="icon" onClick={() => setDocPreview(d)}>
                           <Eye className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            exportarDocumentoPdf(d);
+                            toast.success("PDF gerado para download.");
+                          }}
+                          title="Exportar PDF"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -479,6 +492,23 @@ export default function Contratos() {
                   <p className="mt-1 text-sm text-muted-foreground">{docPreview.observacoes}</p>
                 </div>
               )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setDocPreview(null)}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => {
+                    exportarDocumentoPdf(docPreview);
+                    toast.success("PDF gerado para download.");
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar PDF
+                </Button>
+              </div>
             </>
           )}
         </DialogContent>
