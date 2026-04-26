@@ -32,7 +32,7 @@ export function AnexosSection({
   titulo = "Anexos",
   className,
 }: Props) {
-  const { user, role } = useAuth();
+  const { user, roles } = useAuth();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
@@ -42,9 +42,10 @@ export function AnexosSection({
 
   const podeEnviar =
     !!user &&
-    !!role &&
-    ["administrador", "operacional", "financeiro", "compliance", "cobranca"].includes(role);
-  const isAdmin = role === "administrador";
+    roles.some((r) =>
+      ["administrador", "operacional", "financeiro", "compliance", "cobranca"].includes(r),
+    );
+  const isAdmin = roles.includes("administrador");
 
   async function recarregar() {
     if (!entidadeId) return;
