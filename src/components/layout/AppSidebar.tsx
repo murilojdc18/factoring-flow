@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  LucideIcon,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -23,26 +24,34 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import { AppArea } from "@/lib/permissions";
 
-const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Sacados", url: "/sacados", icon: Building2 },
-  { title: "Títulos", url: "/titulos", icon: FileText },
-  { title: "Operações", url: "/operacoes", icon: Briefcase },
-  { title: "Contratos", url: "/contratos", icon: ScrollText },
-  { title: "Cobranças", url: "/cobrancas", icon: Wallet },
+type NavItem = { title: string; url: string; icon: LucideIcon; area: AppArea };
+
+const mainItems: NavItem[] = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, area: "dashboard" },
+  { title: "Clientes", url: "/clientes", icon: Users, area: "clientes" },
+  { title: "Sacados", url: "/sacados", icon: Building2, area: "sacados" },
+  { title: "Títulos", url: "/titulos", icon: FileText, area: "titulos" },
+  { title: "Operações", url: "/operacoes", icon: Briefcase, area: "operacoes" },
+  { title: "Contratos", url: "/contratos", icon: ScrollText, area: "contratos" },
+  { title: "Cobranças", url: "/cobrancas", icon: Wallet, area: "cobrancas" },
 ];
 
-const systemItems = [
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
-  { title: "Compliance", url: "/compliance", icon: ShieldCheck },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+const systemItems: NavItem[] = [
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3, area: "relatorios" },
+  { title: "Compliance", url: "/compliance", icon: ShieldCheck, area: "compliance" },
+  { title: "Configurações", url: "/configuracoes", icon: Settings, area: "configuracoes" },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
+  const { canViewArea } = useAuth();
+
+  const visibleMain = mainItems.filter((i) => canViewArea(i.area));
+  const visibleSystem = systemItems.filter((i) => canViewArea(i.area));
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -71,7 +80,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainItems.map((item) => (
+              {visibleMain.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink
@@ -95,7 +104,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {systemItems.map((item) => (
+              {visibleSystem.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild tooltip={item.title}>
                     <NavLink

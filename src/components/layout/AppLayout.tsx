@@ -1,9 +1,19 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { Bell, Search, UserCircle2 } from "lucide-react";
+import { Bell, LogOut, Search, UserCircle2 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+import { ROLE_LABELS } from "@/lib/permissions";
 
 const ROUTE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Visão geral da operação" },
@@ -19,6 +29,7 @@ const ROUTE_TITLES: Record<string, { title: string; subtitle: string }> = {
 
 export function AppLayout() {
   const location = useLocation();
+  const { user, roles, signOut } = useAuth();
   const meta =
     ROUTE_TITLES[location.pathname] ?? {
       title: "FactorPro",
@@ -54,9 +65,31 @@ export function AppLayout() {
               <Button variant="ghost" size="icon" aria-label="Notificações">
                 <Bell className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Perfil">
-                <UserCircle2 className="h-5 w-5" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Perfil">
+                    <UserCircle2 className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        {user?.email ?? "Usuário"}
+                      </span>
+                      <span className="mt-0.5 text-xs text-muted-foreground">
+                        {roles.length > 0
+                          ? roles.map((r) => ROLE_LABELS[r]).join(", ")
+                          : "Sem perfil atribuído"}
+                      </span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()}>
+                    <LogOut className="mr-2 h-4 w-4" /> Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 

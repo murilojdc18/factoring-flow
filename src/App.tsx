@@ -18,6 +18,10 @@ import Contratos from "./pages/Contratos";
 import Cobrancas from "./pages/Cobrancas";
 import Relatorios from "./pages/Relatorios";
 import Compliance from "./pages/Compliance";
+import Auth from "./pages/Auth";
+import SemAcesso from "./pages/SemAcesso";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -27,25 +31,53 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/clientes" element={<Clientes />} />
-            <Route path="/sacados" element={<Sacados />} />
-            <Route path="/titulos" element={<Titulos />} />
-            <Route path="/operacoes/simulador" element={<OperacaoSimulador />} />
-            <Route path="/operacoes" element={<Operacoes />} />
-            <Route path="/operacoes/:id" element={<OperacaoDetalhes />} />
-            <Route path="/contratos" element={<Contratos />} />
-            <Route path="/cobrancas" element={<Cobrancas />} />
-            <Route path="/relatorios" element={<Relatorios />} />
-            <Route path="/compliance" element={<Compliance />} />
-            <Route path="/configuracoes" element={<Configuracoes />} />
-          </Route>
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            {/* Tudo abaixo exige autenticação */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/sem-acesso" element={<SemAcesso />} />
+
+                <Route element={<ProtectedRoute area="dashboard" />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                </Route>
+                <Route element={<ProtectedRoute area="clientes" />}>
+                  <Route path="/clientes" element={<Clientes />} />
+                </Route>
+                <Route element={<ProtectedRoute area="sacados" />}>
+                  <Route path="/sacados" element={<Sacados />} />
+                </Route>
+                <Route element={<ProtectedRoute area="titulos" />}>
+                  <Route path="/titulos" element={<Titulos />} />
+                </Route>
+                <Route element={<ProtectedRoute area="operacoes" />}>
+                  <Route path="/operacoes/simulador" element={<OperacaoSimulador />} />
+                  <Route path="/operacoes" element={<Operacoes />} />
+                  <Route path="/operacoes/:id" element={<OperacaoDetalhes />} />
+                </Route>
+                <Route element={<ProtectedRoute area="contratos" />}>
+                  <Route path="/contratos" element={<Contratos />} />
+                </Route>
+                <Route element={<ProtectedRoute area="cobrancas" />}>
+                  <Route path="/cobrancas" element={<Cobrancas />} />
+                </Route>
+                <Route element={<ProtectedRoute area="relatorios" />}>
+                  <Route path="/relatorios" element={<Relatorios />} />
+                </Route>
+                <Route element={<ProtectedRoute area="compliance" />}>
+                  <Route path="/compliance" element={<Compliance />} />
+                </Route>
+                <Route element={<ProtectedRoute area="configuracoes" />}>
+                  <Route path="/configuracoes" element={<Configuracoes />} />
+                </Route>
+              </Route>
+            </Route>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -143,13 +144,15 @@ export default function Sacados() {
         title="Sacados"
         description="Gestão dos devedores responsáveis pelo pagamento dos títulos."
         actions={
-          <Button
-            onClick={abrirNovo}
-            className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Novo sacado
-          </Button>
+          <PermissionGate area="sacados" action="create">
+            <Button
+              onClick={abrirNovo}
+              className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Novo sacado
+            </Button>
+          </PermissionGate>
         }
       />
 

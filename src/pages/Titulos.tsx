@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Table,
   TableBody,
@@ -176,13 +177,15 @@ export default function Titulos() {
         title="Títulos / Recebíveis"
         description="Lançamento e acompanhamento dos títulos cedidos."
         actions={
-          <Button
-            onClick={abrirNovo}
-            className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Lançar título
-          </Button>
+          <PermissionGate area="titulos" action="create">
+            <Button
+              onClick={abrirNovo}
+              className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Lançar título
+            </Button>
+          </PermissionGate>
         }
       />
 
