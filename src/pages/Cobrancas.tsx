@@ -711,6 +711,12 @@ function RegistrarContatoDialog({
               />
             </div>
 
+            <AnexosSection
+              entidadeTipo="cobranca"
+              entidadeId={titulo.id}
+              titulo="Anexos da cobrança"
+            />
+
             <DialogFooter>
               <Button variant="outline" onClick={onClose}>
                 Cancelar
