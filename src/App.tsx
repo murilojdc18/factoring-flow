@@ -14,6 +14,7 @@ import OperacaoSimulador from "./pages/OperacaoSimulador";
 import Operacoes from "./pages/Operacoes";
 import OperacaoDetalhes from "./pages/OperacaoDetalhes";
 import Configuracoes from "./pages/Configuracoes";
+import Contratos from "./pages/Contratos";
 
 const queryClient = new QueryClient();
 
@@ -33,16 +34,7 @@ const App = () => (
             <Route path="/operacoes/simulador" element={<OperacaoSimulador />} />
             <Route path="/operacoes" element={<Operacoes />} />
             <Route path="/operacoes/:id" element={<OperacaoDetalhes />} />
-            <Route
-              path="/contratos"
-              element={
-                <Placeholder
-                  title="Contratos & Aditivos"
-                  description="Documentos proforma — sujeitos a revisão jurídica."
-                  primaryAction="Novo contrato"
-                />
-              }
-            />
+            <Route path="/contratos" element={<Contratos />} />
             <Route
               path="/cobrancas"
               element={
