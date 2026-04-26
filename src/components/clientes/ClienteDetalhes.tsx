@@ -210,6 +210,11 @@ export function ClienteDetalhes({ cliente }: { cliente: Cliente }) {
           </p>
         </div>
       )}
+      <AnexosSection
+        entidadeTipo="cliente"
+        entidadeId={cliente.id}
+        titulo="Documentos e anexos"
+      />
     </div>
   );
 }
