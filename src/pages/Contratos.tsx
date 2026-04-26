@@ -441,6 +441,53 @@ export default function Contratos() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Wizard: Gerar documento proforma a partir de operação */}
+      <GerarDocumentoDialog
+        open={gerarOpen}
+        onOpenChange={setGerarOpen}
+        modelos={modelos}
+        onSalvar={handleSalvarDocumento}
+      />
+
+      {/* Preview de documento gerado */}
+      <Dialog
+        open={!!docPreview}
+        onOpenChange={(o) => !o && setDocPreview(null)}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {docPreview && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{docPreview.id}</DialogTitle>
+                <DialogDescription>
+                  {docPreview.tipoDocumento} • Modelo {docPreview.modeloNome} v
+                  {docPreview.modeloVersao} • Operação {docPreview.operacaoNumero}
+                </DialogDescription>
+              </DialogHeader>
+              <Alert>
+                <FileText className="h-4 w-4" />
+                <AlertTitle>Documento proforma</AlertTitle>
+                <AlertDescription>
+                  Texto gerado para revisão jurídica. Não constitui documento
+                  definitivo nem dispensa validação.
+                </AlertDescription>
+              </Alert>
+              <div className="rounded-md border bg-muted/30 p-4">
+                <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground">
+                  {docPreview.textoFinal}
+                </pre>
+              </div>
+              {docPreview.observacoes && (
+                <div className="rounded-md border-l-4 border-primary bg-primary/5 p-3">
+                  <p className="text-xs font-semibold text-primary">Observações internas</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{docPreview.observacoes}</p>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
