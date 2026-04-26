@@ -8,6 +8,7 @@ import {
   Wallet,
   BarChart3,
   Settings,
+  ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -35,6 +36,7 @@ const mainItems = [
 
 const systemItems = [
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Compliance", url: "/compliance", icon: ShieldCheck },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
