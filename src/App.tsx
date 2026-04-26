@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Placeholder from "./pages/Placeholder";
 import Clientes from "./pages/Clientes";
 import Sacados from "./pages/Sacados";
+import Titulos from "./pages/Titulos";
 
 const queryClient = new QueryClient();
 
@@ -24,16 +25,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/sacados" element={<Sacados />} />
-            <Route
-              path="/titulos"
-              element={
-                <Placeholder
-                  title="Títulos / Recebíveis"
-                  description="Lançamento e acompanhamento de duplicatas e recebíveis."
-                  primaryAction="Lançar título"
-                />
-              }
-            />
+            <Route path="/titulos" element={<Titulos />} />
             <Route
               path="/operacoes"
               element={
