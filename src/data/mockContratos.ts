@@ -53,6 +53,7 @@ export const PLACEHOLDERS = [
   "prazo_medio",
   "quantidade_titulos",
   "lista_titulos",
+  "lista_titulos_bordero",
   "cidade_assinatura",
   "data_assinatura",
 ] as const;
@@ -328,25 +329,63 @@ Títulos cedidos:
   },
   {
     id: "MOD-003",
-    nome: "Borderô Operacional",
+    nome: "Borderô de Títulos",
     tipo: "Borderô de títulos",
-    versao: "1.0",
+    versao: "2.0",
     status: "Ativo",
     atualizadoEm: today,
-    texto: `BORDERÔ Nº {{operacao_numero}}
-Data: {{operacao_data}}
-Cedente: {{cedente_razao_social}} ({{cedente_cnpj}})
+    texto: `>>> BORDERÔ PROFORMA — documento para conferência interna. Sujeito a revisão antes de qualquer formalização. <<<
 
-Títulos:
-{{lista_titulos}}
+============================================================
+BORDERÔ DE TÍTULOS Nº {{bordero_numero}}
+============================================================
 
-Valor bruto: {{valor_bruto_total}}
-Taxa aplicada: {{taxa_aplicada}}
-Prazo médio: {{prazo_medio}} dias
-Valor líquido ao cedente: {{valor_liquido}}
+IDENTIFICAÇÃO
+- Borderô nº: {{bordero_numero}}
+- Operação nº: {{operacao_numero}}
+- Data da operação: {{operacao_data}}
 
-{{cidade_assinatura}}, {{data_assinatura}}.`,
-    observacoes: "",
+CEDENTE
+- Razão social: {{cedente_razao_social}}
+- CNPJ: {{cedente_cnpj}}
+- Representante: {{cedente_representante}}
+
+RESUMO FINANCEIRO
+- Valor bruto total ......... {{valor_bruto_total}}
+- (−) Deságio .............. {{valor_desagio}}
+- (−) Tarifas .............. {{valor_tarifas}}
+- (−) Retenção/reserva ..... {{valor_retencao}}
+- = Valor líquido ao cedente {{valor_liquido}}
+- Prazo médio .............. {{prazo_medio}} dias
+- Taxa aplicada ............ {{taxa_aplicada}} ao mês
+- Quantidade de títulos .... {{quantidade_titulos}}
+
+RELAÇÃO DE TÍTULOS
+┌──────────────┬─────────────────┬────────────────────────────┬──────────────────────┬─────────────┬─────────────┬────────────────┬─────────────┐
+│ Nº do Título │ Tipo            │ Sacado                     │ CPF/CNPJ do Sacado   │ Emissão     │ Vencimento  │ Valor (R$)     │ Status      │
+├──────────────┼─────────────────┼────────────────────────────┼──────────────────────┼─────────────┼─────────────┼────────────────┼─────────────┤
+{{lista_titulos_bordero}}
+└──────────────┴─────────────────┴────────────────────────────┴──────────────────────┴─────────────┴─────────────┴────────────────┴─────────────┘
+
+OBSERVAÇÕES
+(Espaço reservado para observações internas — preencher conforme necessidade da operação.)
+
+ASSINATURAS PROFORMA
+
+{{cidade_assinatura}}, {{data_assinatura}}.
+
+_________________________________________
+{{empresa_factoring_razao_social}}
+CNPJ {{empresa_factoring_cnpj}}
+
+_________________________________________
+{{cedente_razao_social}}
+CNPJ {{cedente_cnpj}}
+Representante: {{cedente_representante}}
+
+>>> Fim do borderô proforma. Conferência interna obrigatória. <<<`,
+    observacoes:
+      "Borderô proforma para conferência interna. Inclui resumo financeiro e relação detalhada dos títulos da operação.",
   },
   {
     id: "MOD-004",

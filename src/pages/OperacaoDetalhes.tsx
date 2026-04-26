@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -33,14 +33,25 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { mockOperacoes } from "@/data/mockOperacoes";
 import { mockClientes } from "@/data/mockClientes";
 import { mockTitulos } from "@/data/mockTitulos";
+import { mockModelosContrato } from "@/data/mockContratos";
 import { OperacaoStatusBadge } from "@/components/operacoes/StatusBadge";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
+import { documentosStore } from "@/lib/documentosStore";
+import { DocumentoGerado } from "@/data/mockDocumentosGerados";
 
 export default function OperacaoDetalhes() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const [gerarTipo, setGerarTipo] = useState<
+    | "Contrato de cessão de direitos creditórios"
+    | "Aditivo de operação"
+    | "Borderô de títulos"
+    | null
+  >(null);
 
   const operacao = useMemo(() => mockOperacoes.find((o) => o.id === id), [id]);
   const cedente = useMemo(
@@ -65,6 +76,14 @@ export default function OperacaoDetalhes() {
 
   const acaoSimulada = (msg: string, desc?: string) =>
     toast.success(msg, { description: desc });
+
+  const handleSalvarDocumento = (doc: DocumentoGerado) => {
+    documentosStore.add(doc);
+    setGerarTipo(null);
+    toast.success("Documento gerado salvo.", {
+      description: `${doc.modeloNome} • Operação ${doc.operacaoNumero}`,
+    });
+  };
 
   const podeAprovar = operacao.status === "Em análise";
   const podeCancelar = !["Liquidada", "Cancelada", "Recomprada"].includes(
@@ -112,13 +131,13 @@ export default function OperacaoDetalhes() {
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar
                   </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={() => acaoSimulada("Borderô proforma gerado.", "Documento simulado para revisão.")}>
+                <Button variant="outline" size="sm" onClick={() => setGerarTipo("Borderô de títulos")}>
                   <FileText className="mr-2 h-4 w-4" /> Borderô
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => acaoSimulada("Contrato proforma gerado.", "Sujeito a revisão jurídica.")}>
+                <Button variant="outline" size="sm" onClick={() => setGerarTipo("Contrato de cessão de direitos creditórios")}>
                   <FileSignature className="mr-2 h-4 w-4" /> Contrato
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => acaoSimulada("Aditivo proforma gerado.", "Sujeito a revisão jurídica.")}>
+                <Button variant="outline" size="sm" onClick={() => setGerarTipo("Aditivo de operação")}>
                   <FilePlus2 className="mr-2 h-4 w-4" /> Aditivo
                 </Button>
                 {podeCancelar && (
@@ -248,6 +267,15 @@ export default function OperacaoDetalhes() {
           </Card>
         </div>
       </div>
+
+      <GerarDocumentoDialog
+        open={gerarTipo !== null}
+        onOpenChange={(o) => !o && setGerarTipo(null)}
+        modelos={mockModelosContrato}
+        onSalvar={handleSalvarDocumento}
+        initialTipo={gerarTipo ?? undefined}
+        initialOperacaoId={operacao.id}
+      />
     </div>
   );
 }
