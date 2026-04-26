@@ -419,7 +419,9 @@ function TabelaTitulos({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {linhas.map(({ titulo, estado, dias }) => (
+          {linhas.map(({ titulo, estado, dias }) => {
+            const recompra = getRecompra(titulo.id);
+            return (
             <TableRow key={titulo.id}>
               <TableCell className="font-mono text-xs">{titulo.numero}</TableCell>
               <TableCell className="text-sm">{titulo.cedenteNome}</TableCell>
@@ -437,7 +439,12 @@ function TabelaTitulos({
                   <span className="text-muted-foreground">{dias}d</span>
                 )}
               </TableCell>
-              <TableCell><StatusBadge status={estado.status} /></TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  <StatusBadge status={estado.status} />
+                  {recompra && <RecompraStatusBadge status={recompra.status} />}
+                </div>
+              </TableCell>
               <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground" title={estado.ultimaAcao}>
                 {estado.ultimaAcao}
               </TableCell>
@@ -478,6 +485,10 @@ function TabelaTitulos({
                         Para recompra
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onRecompra(titulo)}>
+                        <ShieldAlert className="mr-2 h-4 w-4 text-warning" />
+                        Marcar para recompra/substituição
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onObs(titulo)}>
                         Adicionar observação
                       </DropdownMenuItem>
@@ -486,7 +497,8 @@ function TabelaTitulos({
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </div>
