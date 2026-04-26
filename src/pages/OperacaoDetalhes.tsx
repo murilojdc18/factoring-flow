@@ -38,6 +38,7 @@ import { mockModelosContrato } from "@/data/mockContratos";
 import { OperacaoStatusBadge } from "@/components/operacoes/StatusBadge";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { toast } from "sonner";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
 import { documentosStore } from "@/lib/documentosStore";
