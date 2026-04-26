@@ -274,6 +274,84 @@ export default function Contratos() {
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="documentos" className="space-y-4">
+          <Card className="shadow-card">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Modelo</TableHead>
+                    <TableHead>Operação</TableHead>
+                    <TableHead>Cedente</TableHead>
+                    <TableHead>Gerado em</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {documentos.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
+                        Nenhum documento gerado. Use{" "}
+                        <button
+                          className="font-medium text-primary underline-offset-2 hover:underline"
+                          onClick={() => setGerarOpen(true)}
+                        >
+                          Gerar documento
+                        </button>{" "}
+                        para preencher um modelo a partir de uma operação.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {documentos.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-mono text-xs">{d.id}</TableCell>
+                      <TableCell className="text-sm">
+                        {d.modeloNome}{" "}
+                        <span className="text-xs text-muted-foreground">v{d.modeloVersao}</span>
+                      </TableCell>
+                      <TableCell className="text-sm">{d.operacaoNumero}</TableCell>
+                      <TableCell className="text-sm">{d.cedenteNome}</TableCell>
+                      <TableCell className="text-sm">{formatBR(d.geradoEm)}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={d.status}
+                          onValueChange={(v) =>
+                            setDocumentos((prev) =>
+                              prev.map((p) =>
+                                p.id === d.id
+                                  ? { ...p, status: v as DocumentoGerado["status"] }
+                                  : p,
+                              ),
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-[180px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_DOCUMENTO.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => setDocPreview(d)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Modal criar/editar */}
       <Dialog
