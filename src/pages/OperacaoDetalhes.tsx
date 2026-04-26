@@ -282,6 +282,22 @@ export default function OperacaoDetalhes() {
             </Card>
           )}
 
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="text-lg">Anexos da operação</CardTitle>
+              <CardDescription>
+                Comprovantes, contratos assinados e documentos relacionados.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AnexosSection
+                entidadeTipo="operacao"
+                entidadeId={operacao.id}
+                titulo="Arquivos"
+              />
+            </CardContent>
+          </Card>
+
           {/* Recompras / Substituições */}
           <Card className="shadow-card">
             <CardHeader>
