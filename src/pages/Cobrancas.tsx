@@ -64,7 +64,10 @@ import {
   TIPOS_CONTATO,
   useCobrancas,
 } from "@/data/mockCobrancas";
-import { useRecompras } from "@/data/mockRecompras";
+import {
+  EstadoRecompraTitulo,
+  useRecompras,
+} from "@/data/mockRecompras";
 import { RecompraDialog } from "@/components/recompras/RecompraDialog";
 import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
 import { formatBRL } from "@/lib/format";
@@ -386,7 +389,7 @@ function TabelaTitulos({
   onObs: (t: Titulo) => void;
   onStatus: (t: Titulo, s: StatusCobranca) => void;
   onRecompra: (t: Titulo) => void;
-  getRecompra: (tituloId: string) => ReturnType<typeof useRecompras>["estado"] extends (id: string) => infer R ? R : never;
+  getRecompra: (tituloId: string) => EstadoRecompraTitulo | undefined;
   showAtraso?: boolean;
 }) {
   if (linhas.length === 0) {
