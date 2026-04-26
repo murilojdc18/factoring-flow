@@ -318,6 +318,57 @@ export type Database = {
           },
         ]
       }
+      integracao_logs: {
+        Row: {
+          created_at: string
+          destino: string
+          disparado_por: string | null
+          duracao_ms: number | null
+          entidade_id: string | null
+          entidade_tipo: string
+          erro: string | null
+          evento: string
+          http_status: number | null
+          id: string
+          payload_enviado: Json
+          resposta: string | null
+          status: Database["public"]["Enums"]["integracao_status"]
+          tentativas: number
+        }
+        Insert: {
+          created_at?: string
+          destino?: string
+          disparado_por?: string | null
+          duracao_ms?: number | null
+          entidade_id?: string | null
+          entidade_tipo?: string
+          erro?: string | null
+          evento: string
+          http_status?: number | null
+          id?: string
+          payload_enviado?: Json
+          resposta?: string | null
+          status?: Database["public"]["Enums"]["integracao_status"]
+          tentativas?: number
+        }
+        Update: {
+          created_at?: string
+          destino?: string
+          disparado_por?: string | null
+          duracao_ms?: number | null
+          entidade_id?: string | null
+          entidade_tipo?: string
+          erro?: string | null
+          evento?: string
+          http_status?: number | null
+          id?: string
+          payload_enviado?: Json
+          resposta?: string | null
+          status?: Database["public"]["Enums"]["integracao_status"]
+          tentativas?: number
+        }
+        Relationships: []
+      }
       modelos_documentos: {
         Row: {
           conteudo: string
@@ -791,6 +842,7 @@ export type Database = {
         | "Aprovado com ressalvas"
         | "Reprovado"
         | "Pendente"
+      integracao_status: "sucesso" | "erro" | "pendente"
       modelo_documento_status: "Ativo" | "Inativo" | "Rascunho"
       operacao_status:
         | "Rascunho"
@@ -984,6 +1036,7 @@ export const Constants = {
         "Reprovado",
         "Pendente",
       ],
+      integracao_status: ["sucesso", "erro", "pendente"],
       modelo_documento_status: ["Ativo", "Inativo", "Rascunho"],
       operacao_status: [
         "Rascunho",
