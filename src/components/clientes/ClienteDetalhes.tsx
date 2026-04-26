@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "./StatusBadge";
 import { formatBRL, formatNumber } from "@/lib/format";
 import type { Cliente } from "@/data/mockClientes";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 
 function Stat({
   icon: Icon,
