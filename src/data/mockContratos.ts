@@ -190,6 +190,98 @@ Testemunhas:
       "Minuta proforma — sujeita a revisão jurídica completa antes do uso. A tabela de títulos é renderizada via {{lista_titulos}} e deverá ser substituída pela relação real durante a geração do documento.",
   },
   {
+    id: "MOD-ADIT-001",
+    nome: "Aditivo de Operação ao Contrato de Fomento",
+    tipo: "Aditivo de operação",
+    versao: "1.0",
+    status: "Ativo",
+    atualizadoEm: today,
+    texto: `>>> ADITIVO PROFORMA — revisar juridicamente antes de uso. Documento gerado automaticamente, sem garantia de validade jurídica. <<<
+
+============================================================
+ADITIVO DE OPERAÇÃO AO CONTRATO DE FOMENTO MERCANTIL
+Operação nº {{operacao_numero}} — Borderô nº {{bordero_numero}}
+============================================================
+
+1. REFERÊNCIA AO CONTRATO PRINCIPAL
+
+1.1. O presente instrumento constitui aditivo ao Contrato Master de Fomento Mercantil nº {{contrato_master_numero}}, celebrado em {{contrato_master_data}} entre as Partes abaixo identificadas (doravante "Contrato Principal").
+1.2. Aplicam-se ao presente aditivo todos os termos e condições do Contrato Principal, exceto naquilo que for expressamente alterado ou complementado por este instrumento.
+
+2. IDENTIFICAÇÃO DAS PARTES
+
+FACTORING: {{empresa_factoring_razao_social}}, inscrita no CNPJ sob o nº {{empresa_factoring_cnpj}}.
+CEDENTE: {{cedente_razao_social}}, inscrita no CNPJ sob o nº {{cedente_cnpj}}, neste ato representada por {{cedente_representante}}.
+
+3. NÚMERO DA OPERAÇÃO E BORDERÔ
+
+3.1. Operação nº {{operacao_numero}}, datada de {{operacao_data}}.
+3.2. Borderô vinculado: {{bordero_numero}}.
+3.3. Quantidade de títulos cedidos nesta operação: {{quantidade_titulos}}.
+
+4. RELAÇÃO DOS TÍTULOS INCLUÍDOS
+
+4.1. Compõem o objeto desta operação os títulos discriminados na tabela abaixo:
+
+┌──────────────┬──────────────────────────────┬──────────────┬──────────────────┐
+│ Nº do Título │ Sacado                       │ Vencimento   │ Valor (R$)       │
+├──────────────┼──────────────────────────────┼──────────────┼──────────────────┤
+{{lista_titulos}}
+└──────────────┴──────────────────────────────┴──────────────┴──────────────────┘
+
+4.2. A relação acima é parte integrante deste aditivo.
+
+5. CONDIÇÕES FINANCEIRAS DA OPERAÇÃO
+
+5.1. Taxa de fator/deságio aplicada nesta operação: {{taxa_aplicada}} ao mês.
+5.2. Prazo médio ponderado: {{prazo_medio}} dias.
+5.3. As condições aqui estabelecidas aplicam-se exclusivamente a esta operação e não alteram as taxas previstas no Contrato Principal para futuras operações.
+
+6. VALOR BRUTO, DESÁGIO, TARIFAS, RETENÇÃO E VALOR LÍQUIDO
+
+6.1. Valor bruto total dos títulos cedidos: {{valor_bruto_total}}.
+6.2. Valor de deságio: {{valor_desagio}}.
+6.3. Valor de tarifas operacionais: {{valor_tarifas}}.
+6.4. Valor de retenção/reserva: {{valor_retencao}}.
+6.5. Valor líquido a ser pago à CEDENTE: {{valor_liquido}}.
+6.6. Os valores acima são estimativos e poderão ser ajustados mediante conferência documental e validação jurídica.
+
+7. DECLARAÇÕES ESPECÍFICAS DA OPERAÇÃO
+
+A CEDENTE declara, especificamente em relação a esta operação, que:
+a) os títulos relacionados no item 4 são legítimos e decorrem de operações mercantis efetivamente realizadas;
+b) inexistem, até a presente data e segundo seu conhecimento, vícios, gravames ou cessões anteriores sobre tais títulos;
+c) as informações financeiras e cadastrais relativas aos sacados foram prestadas de boa-fé.
+
+8. CONFIRMAÇÃO DAS DEMAIS CLÁUSULAS DO CONTRATO PRINCIPAL
+
+8.1. As Partes ratificam, expressamente, todas as demais cláusulas e condições do Contrato Principal nº {{contrato_master_numero}}, datado de {{contrato_master_data}}, que permanecem em pleno vigor.
+8.2. Em caso de eventual divergência entre o Contrato Principal e este aditivo, prevalecerão, especificamente quanto a esta operação, as condições aqui estabelecidas, sem prejuízo da revisão jurídica posterior.
+
+9. LOCAL, DATA E ASSINATURAS
+
+E, por estarem assim justas e contratadas, as Partes assinam o presente aditivo em duas vias de igual teor.
+
+{{cidade_assinatura}}, {{data_assinatura}}.
+
+_________________________________________
+{{empresa_factoring_razao_social}}
+CNPJ {{empresa_factoring_cnpj}}
+
+_________________________________________
+{{cedente_razao_social}}
+CNPJ {{cedente_cnpj}}
+Representante: {{cedente_representante}}
+
+Testemunhas:
+1) Nome: ____________________________   CPF: ____________________
+2) Nome: ____________________________   CPF: ____________________
+
+>>> Fim do aditivo proforma. Submeta à revisão jurídica antes de qualquer formalização. <<<`,
+    observacoes:
+      "Aditivo proforma para operações específicas vinculadas a um contrato master. A tabela {{lista_titulos}} deve ser substituída pela relação real dos títulos da operação.",
+  },
+  {
     id: "MOD-001",
     nome: "Contrato Master Padrão",
     tipo: "Contrato master de fomento mercantil",
