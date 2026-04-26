@@ -6,6 +6,7 @@ import {
   History,
   MessageSquarePlus,
   Search,
+  ShieldAlert,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +64,9 @@ import {
   TIPOS_CONTATO,
   useCobrancas,
 } from "@/data/mockCobrancas";
+import { useRecompras } from "@/data/mockRecompras";
+import { RecompraDialog } from "@/components/recompras/RecompraDialog";
+import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
 import { formatBRL } from "@/lib/format";
 import { daysUntil, formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
