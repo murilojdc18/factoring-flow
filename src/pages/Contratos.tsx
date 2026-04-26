@@ -10,6 +10,7 @@ import {
   Search,
   Sparkles,
   Code2,
+  FileSignature,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +51,14 @@ import { ModeloForm } from "@/components/contratos/ModeloForm";
 import { aplicarMockNoTexto } from "@/lib/contratoPreview";
 import { formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  DocumentoGerado,
+  STATUS_DOCUMENTO,
+  mockDocumentosGerados,
+} from "@/data/mockDocumentosGerados";
+import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
 
 type ModalState =
   | { tipo: "fechado" }
@@ -64,6 +73,18 @@ export default function Contratos() {
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [modal, setModal] = useState<ModalState>({ tipo: "fechado" });
   const [previewComMock, setPreviewComMock] = useState(false);
+  const [documentos, setDocumentos] =
+    useState<DocumentoGerado[]>(mockDocumentosGerados);
+  const [gerarOpen, setGerarOpen] = useState(false);
+  const [docPreview, setDocPreview] = useState<DocumentoGerado | null>(null);
+
+  const handleSalvarDocumento = (doc: DocumentoGerado) => {
+    setDocumentos((prev) => [doc, ...prev]);
+    setGerarOpen(false);
+    toast.success("Documento gerado salvo.", {
+      description: `${doc.modeloNome} • Operação ${doc.operacaoNumero}`,
+    });
+  };
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -119,12 +140,17 @@ export default function Contratos() {
         title="Contratos & Documentos"
         description="Modelos proforma de contratos, borderôs e termos."
         actions={
-          <Button
-            onClick={() => setModal({ tipo: "criar" })}
-            className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Novo modelo
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setGerarOpen(true)}>
+              <FileSignature className="mr-2 h-4 w-4" /> Gerar documento
+            </Button>
+            <Button
+              onClick={() => setModal({ tipo: "criar" })}
+              className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Novo modelo
+            </Button>
+          </div>
         }
       />
 
@@ -137,7 +163,22 @@ export default function Contratos() {
         </AlertDescription>
       </Alert>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Tabs defaultValue="modelos" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="modelos">Modelos</TabsTrigger>
+          <TabsTrigger value="documentos">
+            Documentos gerados
+            {documentos.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {documentos.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="modelos" className="space-y-6">
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Total" value={totais.total} />
         <Kpi label="Ativos" value={totais.ativos} />
         <Kpi label="Rascunhos" value={totais.rascunhos} />
@@ -233,6 +274,84 @@ export default function Contratos() {
           </Table>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="documentos" className="space-y-4">
+          <Card className="shadow-card">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Documento</TableHead>
+                    <TableHead>Modelo</TableHead>
+                    <TableHead>Operação</TableHead>
+                    <TableHead>Cedente</TableHead>
+                    <TableHead>Gerado em</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-12"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {documentos.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
+                        Nenhum documento gerado. Use{" "}
+                        <button
+                          className="font-medium text-primary underline-offset-2 hover:underline"
+                          onClick={() => setGerarOpen(true)}
+                        >
+                          Gerar documento
+                        </button>{" "}
+                        para preencher um modelo a partir de uma operação.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {documentos.map((d) => (
+                    <TableRow key={d.id}>
+                      <TableCell className="font-mono text-xs">{d.id}</TableCell>
+                      <TableCell className="text-sm">
+                        {d.modeloNome}{" "}
+                        <span className="text-xs text-muted-foreground">v{d.modeloVersao}</span>
+                      </TableCell>
+                      <TableCell className="text-sm">{d.operacaoNumero}</TableCell>
+                      <TableCell className="text-sm">{d.cedenteNome}</TableCell>
+                      <TableCell className="text-sm">{formatBR(d.geradoEm)}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={d.status}
+                          onValueChange={(v) =>
+                            setDocumentos((prev) =>
+                              prev.map((p) =>
+                                p.id === d.id
+                                  ? { ...p, status: v as DocumentoGerado["status"] }
+                                  : p,
+                              ),
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-[180px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_DOCUMENTO.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => setDocPreview(d)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Modal criar/editar */}
       <Dialog
@@ -316,6 +435,53 @@ export default function Contratos() {
                 <div className="rounded-md border-l-4 border-primary bg-primary/5 p-3">
                   <p className="text-xs font-semibold text-primary">Observações internas</p>
                   <p className="mt-1 text-sm text-muted-foreground">{modal.modelo.observacoes}</p>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Wizard: Gerar documento proforma a partir de operação */}
+      <GerarDocumentoDialog
+        open={gerarOpen}
+        onOpenChange={setGerarOpen}
+        modelos={modelos}
+        onSalvar={handleSalvarDocumento}
+      />
+
+      {/* Preview de documento gerado */}
+      <Dialog
+        open={!!docPreview}
+        onOpenChange={(o) => !o && setDocPreview(null)}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {docPreview && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{docPreview.id}</DialogTitle>
+                <DialogDescription>
+                  {docPreview.tipoDocumento} • Modelo {docPreview.modeloNome} v
+                  {docPreview.modeloVersao} • Operação {docPreview.operacaoNumero}
+                </DialogDescription>
+              </DialogHeader>
+              <Alert>
+                <FileText className="h-4 w-4" />
+                <AlertTitle>Documento proforma</AlertTitle>
+                <AlertDescription>
+                  Texto gerado para revisão jurídica. Não constitui documento
+                  definitivo nem dispensa validação.
+                </AlertDescription>
+              </Alert>
+              <div className="rounded-md border bg-muted/30 p-4">
+                <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground">
+                  {docPreview.textoFinal}
+                </pre>
+              </div>
+              {docPreview.observacoes && (
+                <div className="rounded-md border-l-4 border-primary bg-primary/5 p-3">
+                  <p className="text-xs font-semibold text-primary">Observações internas</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{docPreview.observacoes}</p>
                 </div>
               )}
             </>
