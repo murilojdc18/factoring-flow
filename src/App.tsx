@@ -10,6 +10,7 @@ import Placeholder from "./pages/Placeholder";
 import Clientes from "./pages/Clientes";
 import Sacados from "./pages/Sacados";
 import Titulos from "./pages/Titulos";
+import OperacaoSimulador from "./pages/OperacaoSimulador";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/sacados" element={<Sacados />} />
             <Route path="/titulos" element={<Titulos />} />
+            <Route path="/operacoes/simulador" element={<OperacaoSimulador />} />
             <Route
               path="/operacoes"
               element={
@@ -33,6 +35,7 @@ const App = () => (
                   title="Operações / Borderôs"
                   description="Simulação e geração de borderôs de fomento."
                   primaryAction="Nova operação"
+                  primaryActionTo="/operacoes/simulador"
                 />
               }
             />
