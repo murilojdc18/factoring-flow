@@ -1,4 +1,5 @@
 import { Construction } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,12 +8,14 @@ interface PlaceholderProps {
   title: string;
   description: string;
   primaryAction?: string;
+  primaryActionTo?: string;
 }
 
 export default function Placeholder({
   title,
   description,
   primaryAction,
+  primaryActionTo,
 }: PlaceholderProps) {
   return (
     <div>
@@ -21,9 +24,18 @@ export default function Placeholder({
         description={description}
         actions={
           primaryAction ? (
-            <Button className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90">
-              {primaryAction}
-            </Button>
+            primaryActionTo ? (
+              <Button
+                asChild
+                className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
+              >
+                <Link to={primaryActionTo}>{primaryAction}</Link>
+              </Button>
+            ) : (
+              <Button className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90">
+                {primaryAction}
+              </Button>
+            )
           ) : null
         }
       />
