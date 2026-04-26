@@ -481,6 +481,23 @@ export default function Contratos() {
                   <p className="mt-1 text-sm text-muted-foreground">{docPreview.observacoes}</p>
                 </div>
               )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setDocPreview(null)}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => {
+                    exportarDocumentoPdf(docPreview);
+                    toast.success("PDF gerado para download.");
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar PDF
+                </Button>
+              </div>
             </>
           )}
         </DialogContent>
