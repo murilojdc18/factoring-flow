@@ -22,7 +22,7 @@ export interface Anexo {
   tipo_mime: string;
   tamanho_bytes: number;
   entidade_tipo: AnexoEntidade;
-  entidade_id: string;
+  entidade_id: string; // text — aceita UUID ou ID textual
   observacoes: string;
   status: AnexoStatus;
   enviado_por: string | null;
