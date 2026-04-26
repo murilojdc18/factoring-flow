@@ -59,6 +59,7 @@ export default function Compliance() {
   const [escopo, setEscopo] = useState<EscopoAnalise>("Cliente");
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState<AnaliseCompliance | undefined>();
+  const [alvoInicial, setAlvoInicial] = useState<string | undefined>();
 
   const semAnaliseClientes = alvosSemAnalise("Cliente");
   const semAnaliseOperacoes = alvosSemAnalise("Operação");
@@ -77,12 +78,21 @@ export default function Compliance() {
   const abrirNova = (esc: EscopoAnalise) => {
     setEscopo(esc);
     setEditando(undefined);
+    setAlvoInicial(undefined);
     setOpen(true);
   };
 
   const abrirRevisao = (a: AnaliseCompliance) => {
     setEscopo(a.escopo);
     setEditando(a);
+    setAlvoInicial(undefined);
+    setOpen(true);
+  };
+
+  const abrirComAlvo = (esc: EscopoAnalise, alvoId: string) => {
+    setEscopo(esc);
+    setEditando(undefined);
+    setAlvoInicial(alvoId);
     setOpen(true);
   };
 
@@ -174,15 +184,7 @@ export default function Compliance() {
             pendentes={semAnaliseClientes}
             escopo="Cliente"
             onRevisar={abrirRevisao}
-            onCriar={(id) => {
-              setEscopo("Cliente");
-              setEditando(undefined);
-              setOpen(true);
-              setTimeout(() => {
-                // truque: reusa estado abrindo com alvoIdInicial via key
-              }, 0);
-              alvoInicialRef.current = id;
-            }}
+            onCriar={(id) => abrirComAlvo("Cliente", id)}
           />
         </TabsContent>
 
@@ -192,12 +194,7 @@ export default function Compliance() {
             pendentes={semAnaliseOperacoes}
             escopo="Operação"
             onRevisar={abrirRevisao}
-            onCriar={(id) => {
-              setEscopo("Operação");
-              setEditando(undefined);
-              setOpen(true);
-              alvoInicialRef.current = id;
-            }}
+            onCriar={(id) => abrirComAlvo("Operação", id)}
           />
         </TabsContent>
 
@@ -256,18 +253,15 @@ export default function Compliance() {
         open={open}
         onOpenChange={(v) => {
           setOpen(v);
-          if (!v) alvoInicialRef.current = undefined;
+          if (!v) setAlvoInicial(undefined);
         }}
         escopo={escopo}
-        alvoIdInicial={alvoInicialRef.current}
+        alvoIdInicial={alvoInicial}
         analiseExistente={editando}
       />
     </div>
   );
 }
-
-// ref-like simples sem import extra
-const alvoInicialRef: { current: string | undefined } = { current: undefined };
 
 function KpiCard({
   icon,
