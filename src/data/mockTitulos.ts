@@ -211,7 +211,7 @@ export const mockTitulos: Titulo[] = [
     numeroNotaFiscal: "000.999.888",
     chaveNotaFiscal: "5126 0399 9888 0010 0190 5500 1000 9998 8899 9888 0044",
     descricao: "Materiais de construção",
-    status: "Liquidada" as unknown as TituloStatus,
+    status: "Liquidado",
     observacoes: "Liquidado pelo sacado em 22/04.",
     anexos: [],
     criadoEm: addDays(-60),
@@ -238,8 +238,3 @@ export const mockTitulos: Titulo[] = [
     criadoEm: addDays(-90),
   },
 ];
-
-// fix: corrigir status que ficou "Liquidada" → "Liquidado"
-mockTitulos.forEach((t) => {
-  if ((t.status as string) === "Liquidada") t.status = "Liquidado";
-});
