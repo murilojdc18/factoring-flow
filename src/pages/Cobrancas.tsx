@@ -377,12 +377,16 @@ function TabelaTitulos({
   onContato,
   onObs,
   onStatus,
+  onRecompra,
+  getRecompra,
   showAtraso,
 }: {
   linhas: LinhaCobranca[];
   onContato: (t: Titulo) => void;
   onObs: (t: Titulo) => void;
   onStatus: (t: Titulo, s: StatusCobranca) => void;
+  onRecompra: (t: Titulo) => void;
+  getRecompra: (tituloId: string) => ReturnType<typeof useRecompras>["estado"] extends (id: string) => infer R ? R : never;
   showAtraso?: boolean;
 }) {
   if (linhas.length === 0) {
