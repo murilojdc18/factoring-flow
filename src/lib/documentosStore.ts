@@ -26,14 +26,16 @@ export const documentosStore = {
     docs = docs.map((d) => (d.id === id ? { ...d, ...patch } : d));
     emit();
   },
-  subscribe: (fn: (d: DocumentoGerado[]) => void) => {
+  subscribe: (fn: (d: DocumentoGerado[]) => void): (() => void) => {
     listeners.add(fn);
-    return () => listeners.delete(fn);
+    return () => {
+      listeners.delete(fn);
+    };
   },
 };
 
 export function useDocumentos() {
   const [state, setState] = useState<DocumentoGerado[]>(documentosStore.get());
-  useEffect(() => documentosStore.subscribe(setState) as unknown as () => void, []);
+  useEffect(() => documentosStore.subscribe(setState), []);
   return state;
 }
