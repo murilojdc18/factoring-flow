@@ -10,6 +10,7 @@ import {
   Search,
   Sparkles,
   Code2,
+  FileSignature,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +51,14 @@ import { ModeloForm } from "@/components/contratos/ModeloForm";
 import { aplicarMockNoTexto } from "@/lib/contratoPreview";
 import { formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  DocumentoGerado,
+  STATUS_DOCUMENTO,
+  mockDocumentosGerados,
+} from "@/data/mockDocumentosGerados";
+import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
 
 type ModalState =
   | { tipo: "fechado" }
@@ -64,6 +73,18 @@ export default function Contratos() {
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [modal, setModal] = useState<ModalState>({ tipo: "fechado" });
   const [previewComMock, setPreviewComMock] = useState(false);
+  const [documentos, setDocumentos] =
+    useState<DocumentoGerado[]>(mockDocumentosGerados);
+  const [gerarOpen, setGerarOpen] = useState(false);
+  const [docPreview, setDocPreview] = useState<DocumentoGerado | null>(null);
+
+  const handleSalvarDocumento = (doc: DocumentoGerado) => {
+    setDocumentos((prev) => [doc, ...prev]);
+    setGerarOpen(false);
+    toast.success("Documento gerado salvo.", {
+      description: `${doc.modeloNome} • Operação ${doc.operacaoNumero}`,
+    });
+  };
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -119,12 +140,17 @@ export default function Contratos() {
         title="Contratos & Documentos"
         description="Modelos proforma de contratos, borderôs e termos."
         actions={
-          <Button
-            onClick={() => setModal({ tipo: "criar" })}
-            className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Novo modelo
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setGerarOpen(true)}>
+              <FileSignature className="mr-2 h-4 w-4" /> Gerar documento
+            </Button>
+            <Button
+              onClick={() => setModal({ tipo: "criar" })}
+              className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Novo modelo
+            </Button>
+          </div>
         }
       />
 
@@ -137,7 +163,22 @@ export default function Contratos() {
         </AlertDescription>
       </Alert>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Tabs defaultValue="modelos" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="modelos">Modelos</TabsTrigger>
+          <TabsTrigger value="documentos">
+            Documentos gerados
+            {documentos.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {documentos.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="modelos" className="space-y-6">
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Total" value={totais.total} />
         <Kpi label="Ativos" value={totais.ativos} />
         <Kpi label="Rascunhos" value={totais.rascunhos} />
