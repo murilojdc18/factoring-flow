@@ -10,6 +10,7 @@ import {
   XCircle,
   Info,
   History,
+  ShieldAlert,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -41,6 +42,20 @@ import { toast } from "sonner";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
 import { documentosStore } from "@/lib/documentosStore";
 import { DocumentoGerado } from "@/data/mockDocumentosGerados";
+import { RecompraDialog } from "@/components/recompras/RecompraDialog";
+import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
+import {
+  STATUS_RECOMPRA,
+  recomprasStore,
+  useRecompras,
+} from "@/data/mockRecompras";
+import { Titulo } from "@/data/mockTitulos";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function OperacaoDetalhes() {
   const { id } = useParams();
@@ -52,6 +67,13 @@ export default function OperacaoDetalhes() {
     | "Borderô de títulos"
     | null
   >(null);
+
+  // Recompra/substituição
+  const { porOperacao, estado } = useRecompras();
+  const [recompraTitulo, setRecompraTitulo] = useState<Titulo | null>(null);
+  const [eventosLocais, setEventosLocais] = useState<
+    { data: string; texto: string }[]
+  >([]);
 
   const operacao = useMemo(() => mockOperacoes.find((o) => o.id === id), [id]);
   const cedente = useMemo(
@@ -89,6 +111,8 @@ export default function OperacaoDetalhes() {
   const podeCancelar = !["Liquidada", "Cancelada", "Recomprada"].includes(
     operacao.status,
   );
+
+  const solicitacoesOperacao = porOperacao(operacao.id);
 
   return (
     <div>
