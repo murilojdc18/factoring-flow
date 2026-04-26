@@ -132,6 +132,8 @@ export default function Cobrancas() {
 
   const [contatoTitulo, setContatoTitulo] = useState<Titulo | null>(null);
   const [obsTitulo, setObsTitulo] = useState<Titulo | null>(null);
+  const [recompraTitulo, setRecompraTitulo] = useState<Titulo | null>(null);
+  const { estado: getEstadoRecompra } = useRecompras();
 
   // Constrói linhas combinando título + estado efetivo
   const linhas = useMemo(() => {
