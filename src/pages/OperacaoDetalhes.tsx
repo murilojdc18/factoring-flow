@@ -267,6 +267,15 @@ export default function OperacaoDetalhes() {
           </Card>
         </div>
       </div>
+
+      <GerarDocumentoDialog
+        open={gerarTipo !== null}
+        onOpenChange={(o) => !o && setGerarTipo(null)}
+        modelos={mockModelosContrato}
+        onSalvar={handleSalvarDocumento}
+        initialTipo={gerarTipo ?? undefined}
+        initialOperacaoId={operacao.id}
+      />
     </div>
   );
 }
