@@ -221,7 +221,12 @@ export const complianceStore = {
 
 export function useCompliance() {
   const [, force] = useState(0);
-  useEffect(() => complianceStore.subscribe(() => force((n) => n + 1)), []);
+  useEffect(() => {
+    const unsub = complianceStore.subscribe(() => force((n) => n + 1));
+    return () => {
+      unsub();
+    };
+  }, []);
   return {
     analises: complianceStore.listarAnalises(),
     politicas: complianceStore.listarPoliticas(),
