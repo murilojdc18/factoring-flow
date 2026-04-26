@@ -44,6 +44,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   modelos: ModeloContrato[];
   onSalvar: (doc: DocumentoGerado) => void;
+  /** Pré-seleciona o tipo de documento ao abrir. */
+  initialTipo?: TipoGeravel;
+  /** Pré-seleciona a operação ao abrir. */
+  initialOperacaoId?: string;
 }
 
 export function GerarDocumentoDialog({
@@ -51,9 +55,11 @@ export function GerarDocumentoDialog({
   onOpenChange,
   modelos,
   onSalvar,
+  initialTipo,
+  initialOperacaoId,
 }: Props) {
   const [tipo, setTipo] = useState<TipoGeravel>(
-    "Contrato de cessão de direitos creditórios",
+    initialTipo ?? "Contrato de cessão de direitos creditórios",
   );
   const [modeloId, setModeloId] = useState<string>("");
   const [operacaoId, setOperacaoId] = useState<string>("");
@@ -75,14 +81,14 @@ export function GerarDocumentoDialog({
   // Reset ao abrir
   useEffect(() => {
     if (open) {
-      setTipo("Contrato de cessão de direitos creditórios");
+      setTipo(initialTipo ?? "Contrato de cessão de direitos creditórios");
       setModeloId("");
-      setOperacaoId("");
+      setOperacaoId(initialOperacaoId ?? "");
       setTextoFinal("");
       setObservacoes("");
       setStatus("Rascunho");
     }
-  }, [open]);
+  }, [open, initialTipo, initialOperacaoId]);
 
   // Auto-seleciona o primeiro modelo do tipo
   useEffect(() => {
