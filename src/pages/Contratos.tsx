@@ -56,9 +56,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   DocumentoGerado,
   STATUS_DOCUMENTO,
-  mockDocumentosGerados,
 } from "@/data/mockDocumentosGerados";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
+import { documentosStore, useDocumentos } from "@/lib/documentosStore";
 
 type ModalState =
   | { tipo: "fechado" }
@@ -73,13 +73,12 @@ export default function Contratos() {
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [modal, setModal] = useState<ModalState>({ tipo: "fechado" });
   const [previewComMock, setPreviewComMock] = useState(false);
-  const [documentos, setDocumentos] =
-    useState<DocumentoGerado[]>(mockDocumentosGerados);
+  const documentos = useDocumentos();
   const [gerarOpen, setGerarOpen] = useState(false);
   const [docPreview, setDocPreview] = useState<DocumentoGerado | null>(null);
 
   const handleSalvarDocumento = (doc: DocumentoGerado) => {
-    setDocumentos((prev) => [doc, ...prev]);
+    documentosStore.add(doc);
     setGerarOpen(false);
     toast.success("Documento gerado salvo.", {
       description: `${doc.modeloNome} • Operação ${doc.operacaoNumero}`,
@@ -320,13 +319,9 @@ export default function Contratos() {
                         <Select
                           value={d.status}
                           onValueChange={(v) =>
-                            setDocumentos((prev) =>
-                              prev.map((p) =>
-                                p.id === d.id
-                                  ? { ...p, status: v as DocumentoGerado["status"] }
-                                  : p,
-                              ),
-                            )
+                            documentosStore.update(d.id, {
+                              status: v as DocumentoGerado["status"],
+                            })
                           }
                         >
                           <SelectTrigger className="h-8 w-[180px] text-xs">
