@@ -6,6 +6,7 @@ import { TituloStatusBadge } from "./StatusBadge";
 import { formatBRL } from "@/lib/format";
 import { formatBR, daysUntil } from "@/lib/dateUtils";
 import type { Titulo } from "@/data/mockTitulos";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 
 function InfoRow({
   icon: Icon,
