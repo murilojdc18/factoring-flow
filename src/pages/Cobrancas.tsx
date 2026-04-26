@@ -197,7 +197,6 @@ export default function Cobrancas() {
       <PageHeader
         title="Cobranças"
         description="Acompanhamento operacional de títulos a vencer, vencidos e liquidados."
-        icon={Wallet}
       />
 
       <Alert>
