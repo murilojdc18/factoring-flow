@@ -8,6 +8,8 @@ import {
   Power,
   PowerOff,
   Search,
+  Sparkles,
+  Code2,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,6 +47,7 @@ import {
 import { ContratoStatusBadge } from "@/components/contratos/StatusBadge";
 import { PreviewTexto } from "@/components/contratos/PreviewTexto";
 import { ModeloForm } from "@/components/contratos/ModeloForm";
+import { aplicarMockNoTexto } from "@/lib/contratoPreview";
 import { formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
 
@@ -60,6 +63,7 @@ export default function Contratos() {
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [modal, setModal] = useState<ModalState>({ tipo: "fechado" });
+  const [previewComMock, setPreviewComMock] = useState(false);
 
   const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -257,7 +261,12 @@ export default function Contratos() {
       {/* Modal preview */}
       <Dialog
         open={modal.tipo === "preview"}
-        onOpenChange={(o) => !o && setModal({ tipo: "fechado" })}
+        onOpenChange={(o) => {
+          if (!o) {
+            setModal({ tipo: "fechado" });
+            setPreviewComMock(false);
+          }
+        }}
       >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           {modal.tipo === "preview" && (
@@ -275,8 +284,33 @@ export default function Contratos() {
                   Revisão jurídica obrigatória antes de uso.
                 </AlertDescription>
               </Alert>
+              <div className="flex items-center justify-end">
+                <Button
+                  variant={previewComMock ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setPreviewComMock((v) => !v)}
+                >
+                  {previewComMock ? (
+                    <>
+                      <Code2 className="mr-2 h-4 w-4" />
+                      Ver placeholders
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Preview com dados mockados
+                    </>
+                  )}
+                </Button>
+              </div>
               <div className="rounded-md border bg-muted/30 p-4">
-                <PreviewTexto texto={modal.modelo.texto} />
+                {previewComMock ? (
+                  <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground">
+                    {aplicarMockNoTexto(modal.modelo.texto)}
+                  </pre>
+                ) : (
+                  <PreviewTexto texto={modal.modelo.texto} />
+                )}
               </div>
               {modal.modelo.observacoes && (
                 <div className="rounded-md border-l-4 border-primary bg-primary/5 p-3">
