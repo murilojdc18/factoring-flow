@@ -8,6 +8,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Placeholder from "./pages/Placeholder";
 import Clientes from "./pages/Clientes";
+import Sacados from "./pages/Sacados";
 
 const queryClient = new QueryClient();
 
@@ -22,16 +23,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/clientes" element={<Clientes />} />
-            <Route
-              path="/sacados"
-              element={
-                <Placeholder
-                  title="Sacados"
-                  description="Cadastro e gestão dos sacados (devedores dos títulos)."
-                  primaryAction="Novo sacado"
-                />
-              }
-            />
+            <Route path="/sacados" element={<Sacados />} />
             <Route
               path="/titulos"
               element={
