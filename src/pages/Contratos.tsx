@@ -11,6 +11,7 @@ import {
   Sparkles,
   Code2,
   FileSignature,
+  Download,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +59,7 @@ import {
   STATUS_DOCUMENTO,
 } from "@/data/mockDocumentosGerados";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
+import { exportarDocumentoPdf } from "@/lib/exportarPdf";
 import { documentosStore, useDocumentos } from "@/lib/documentosStore";
 
 type ModalState =
