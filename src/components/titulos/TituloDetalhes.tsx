@@ -6,6 +6,7 @@ import { TituloStatusBadge } from "./StatusBadge";
 import { formatBRL } from "@/lib/format";
 import { formatBR, daysUntil } from "@/lib/dateUtils";
 import type { Titulo } from "@/data/mockTitulos";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 
 function InfoRow({
   icon: Icon,
@@ -199,6 +200,11 @@ export function TituloDetalhes({ titulo }: { titulo: Titulo }) {
           </p>
         </div>
       )}
+      <AnexosSection
+        entidadeTipo="titulo"
+        entidadeId={titulo.id}
+        titulo="Documentos do título"
+      />
     </div>
   );
 }

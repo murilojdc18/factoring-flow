@@ -38,6 +38,7 @@ import { mockModelosContrato } from "@/data/mockContratos";
 import { OperacaoStatusBadge } from "@/components/operacoes/StatusBadge";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { toast } from "sonner";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
 import { documentosStore } from "@/lib/documentosStore";
@@ -280,6 +281,22 @@ export default function OperacaoDetalhes() {
               </CardContent>
             </Card>
           )}
+
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="text-lg">Anexos da operação</CardTitle>
+              <CardDescription>
+                Comprovantes, contratos assinados e documentos relacionados.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AnexosSection
+                entidadeTipo="operacao"
+                entidadeId={operacao.id}
+                titulo="Arquivos"
+              />
+            </CardContent>
+          </Card>
 
           {/* Recompras / Substituições */}
           <Card className="shadow-card">

@@ -59,6 +59,7 @@ import {
   STATUS_DOCUMENTO,
 } from "@/data/mockDocumentosGerados";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { exportarDocumentoPdf } from "@/lib/exportarPdf";
 import { documentosStore, useDocumentos } from "@/lib/documentosStore";
 
@@ -492,6 +493,11 @@ export default function Contratos() {
                   <p className="mt-1 text-sm text-muted-foreground">{docPreview.observacoes}</p>
                 </div>
               )}
+              <AnexosSection
+                entidadeTipo="documento"
+                entidadeId={docPreview.id}
+                titulo="Anexos do documento"
+              />
               <div className="flex justify-end gap-2 pt-2">
                 <Button
                   variant="outline"

@@ -69,6 +69,7 @@ import {
   useRecompras,
 } from "@/data/mockRecompras";
 import { RecompraDialog } from "@/components/recompras/RecompraDialog";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
 import { formatBRL } from "@/lib/format";
 import { daysUntil, formatBR } from "@/lib/dateUtils";
@@ -709,6 +710,12 @@ function RegistrarContatoDialog({
                 onChange={(e) => setObservacoes(e.target.value)}
               />
             </div>
+
+            <AnexosSection
+              entidadeTipo="cobranca"
+              entidadeId={titulo.id}
+              titulo="Anexos da cobrança"
+            />
 
             <DialogFooter>
               <Button variant="outline" onClick={onClose}>

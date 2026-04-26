@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      anexos: {
+        Row: {
+          created_at: string
+          entidade_id: string
+          entidade_tipo: Database["public"]["Enums"]["anexo_entidade"]
+          enviado_por: string | null
+          id: string
+          nome_arquivo: string
+          observacoes: string
+          status: Database["public"]["Enums"]["anexo_status"]
+          storage_path: string
+          tamanho_bytes: number
+          tipo_mime: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entidade_id: string
+          entidade_tipo: Database["public"]["Enums"]["anexo_entidade"]
+          enviado_por?: string | null
+          id?: string
+          nome_arquivo: string
+          observacoes?: string
+          status?: Database["public"]["Enums"]["anexo_status"]
+          storage_path: string
+          tamanho_bytes: number
+          tipo_mime: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entidade_id?: string
+          entidade_tipo?: Database["public"]["Enums"]["anexo_entidade"]
+          enviado_por?: string | null
+          id?: string
+          nome_arquivo?: string
+          observacoes?: string
+          status?: Database["public"]["Enums"]["anexo_status"]
+          storage_path?: string
+          tamanho_bytes?: number
+          tipo_mime?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
           agencia: string
@@ -812,6 +857,13 @@ export type Database = {
       }
     }
     Enums: {
+      anexo_entidade:
+        | "cliente"
+        | "titulo"
+        | "operacao"
+        | "documento"
+        | "cobranca"
+      anexo_status: "Ativo" | "Arquivado" | "Removido"
       app_role:
         | "administrador"
         | "diretoria"
@@ -1002,6 +1054,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      anexo_entidade: [
+        "cliente",
+        "titulo",
+        "operacao",
+        "documento",
+        "cobranca",
+      ],
+      anexo_status: ["Ativo", "Arquivado", "Removido"],
       app_role: [
         "administrador",
         "diretoria",
