@@ -209,21 +209,39 @@ export default function OperacaoDetalhes() {
                     <TableHead>Emissão</TableHead>
                     <TableHead>Vencimento</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Recompra</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {titulos.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">Nenhum título encontrado.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">Nenhum título encontrado.</TableCell></TableRow>
                   )}
-                  {titulos.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-mono text-xs">{t.numero}</TableCell>
-                      <TableCell className="text-sm">{t.sacadoNome}</TableCell>
-                      <TableCell className="text-sm">{formatBR(t.dataEmissao)}</TableCell>
-                      <TableCell className="text-sm">{formatBR(t.dataVencimento)}</TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">{formatBRL(t.valorFace)}</TableCell>
-                    </TableRow>
-                  ))}
+                  {titulos.map((t) => {
+                    const est = estado(t.id);
+                    return (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-mono text-xs">{t.numero}</TableCell>
+                        <TableCell className="text-sm">{t.sacadoNome}</TableCell>
+                        <TableCell className="text-sm">{formatBR(t.dataEmissao)}</TableCell>
+                        <TableCell className="text-sm">{formatBR(t.dataVencimento)}</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">{formatBRL(t.valorFace)}</TableCell>
+                        <TableCell>
+                          {est ? <RecompraStatusBadge status={est.status} /> : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setRecompraTitulo(t)}
+                          >
+                            <ShieldAlert className="mr-1 h-3.5 w-3.5" />
+                            Recompra
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
