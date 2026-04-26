@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Select,
   SelectContent,
@@ -59,12 +60,14 @@ export default function Operacoes() {
         title="Operações / Borderôs"
         description="Gestão de operações de fomento e seus borderôs."
         actions={
-          <Button asChild className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90">
-            <Link to="/operacoes/simulador">
-              <Calculator className="mr-2 h-4 w-4" />
-              Nova operação
-            </Link>
-          </Button>
+          <PermissionGate area="operacoes" action="create">
+            <Button asChild className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90">
+              <Link to="/operacoes/simulador">
+                <Calculator className="mr-2 h-4 w-4" />
+                Nova operação
+              </Link>
+            </Button>
+          </PermissionGate>
         }
       />
 

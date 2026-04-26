@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Table,
   TableBody,
@@ -134,13 +135,15 @@ export default function Clientes() {
         title="Clientes / Cedentes"
         description="Gestão dos cedentes que cedem títulos para a factoring."
         actions={
-          <Button
-            onClick={abrirNovo}
-            className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            Novo cliente
-          </Button>
+          <PermissionGate area="clientes" action="create">
+            <Button
+              onClick={abrirNovo}
+              className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Novo cliente
+            </Button>
+          </PermissionGate>
         }
       />
 
