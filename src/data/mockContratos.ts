@@ -53,6 +53,7 @@ export const PLACEHOLDERS = [
   "prazo_medio",
   "quantidade_titulos",
   "lista_titulos",
+  "lista_titulos_bordero",
   "cidade_assinatura",
   "data_assinatura",
 ] as const;
