@@ -13,6 +13,7 @@ import Titulos from "./pages/Titulos";
 import OperacaoSimulador from "./pages/OperacaoSimulador";
 import Operacoes from "./pages/Operacoes";
 import OperacaoDetalhes from "./pages/OperacaoDetalhes";
+import Configuracoes from "./pages/Configuracoes";
 
 const queryClient = new QueryClient();
 
@@ -60,15 +61,7 @@ const App = () => (
                 />
               }
             />
-            <Route
-              path="/configuracoes"
-              element={
-                <Placeholder
-                  title="Configurações"
-                  description="Parâmetros financeiros, taxas e usuários do sistema."
-                />
-              }
-            />
+            <Route path="/configuracoes" element={<Configuracoes />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
