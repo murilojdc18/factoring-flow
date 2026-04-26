@@ -1,6 +1,7 @@
 import { Operacao } from "@/data/mockOperacoes";
 import { mockClientes } from "@/data/mockClientes";
 import { mockTitulos, Titulo } from "@/data/mockTitulos";
+import { mockSacados } from "@/data/mockSacados";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
 
@@ -28,6 +29,34 @@ function formatarListaTitulos(titulos: Titulo[]): string {
       const venc = formatBR(t.dataVencimento).padEnd(12).slice(0, 12);
       const val = formatBRL(t.valorFace).replace("R$", "").trim().padStart(16);
       return `│ ${num} │ ${sac} │ ${venc} │  ${val}  │`;
+    })
+    .join("\n");
+}
+
+/**
+ * Versão estendida da relação de títulos para o BORDERÔ (inclui tipo,
+ * documento do sacado, data de emissão e status). Mantida separada da
+ * `formatarListaTitulos` para não quebrar os modelos de contrato/aditivo.
+ */
+function formatarListaTitulosBordero(titulos: Titulo[]): string {
+  if (titulos.length === 0) {
+    return "│ (nenhum título associado)                                                                                                                                  │";
+  }
+  return titulos
+    .map((t) => {
+      const sac = mockSacados.find((s) => s.id === t.sacadoId);
+      const num = t.numero.padEnd(12).slice(0, 12);
+      const tipo = t.tipo.padEnd(15).slice(0, 15);
+      const sacNome = (sac?.nome ?? t.sacadoNome).padEnd(26).slice(0, 26);
+      const sacDoc = (sac?.documento ?? "").padEnd(20).slice(0, 20);
+      const emi = formatBR(t.dataEmissao).padEnd(11).slice(0, 11);
+      const venc = formatBR(t.dataVencimento).padEnd(11).slice(0, 11);
+      const val = formatBRL(t.valorFace)
+        .replace("R$", "")
+        .trim()
+        .padStart(14);
+      const stat = t.status.padEnd(11).slice(0, 11);
+      return `│ ${num} │ ${tipo} │ ${sacNome} │ ${sacDoc} │ ${emi} │ ${venc} │ ${val} │ ${stat} │`;
     })
     .join("\n");
 }
@@ -83,6 +112,7 @@ export function montarPlaceholders(
 
     // Títulos
     lista_titulos: formatarListaTitulos(titulos),
+    lista_titulos_bordero: formatarListaTitulosBordero(titulos),
 
     // Assinatura
     cidade_assinatura: cedente?.cidade ?? EMPRESA_FACTORING.cidade,
