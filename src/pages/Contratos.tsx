@@ -340,6 +340,17 @@ export default function Contratos() {
                         <Button variant="ghost" size="icon" onClick={() => setDocPreview(d)}>
                           <Eye className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            exportarDocumentoPdf(d);
+                            toast.success("PDF gerado para download.");
+                          }}
+                          title="Exportar PDF"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
