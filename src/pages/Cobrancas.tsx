@@ -6,7 +6,6 @@ import {
   History,
   MessageSquarePlus,
   Search,
-  Wallet,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
