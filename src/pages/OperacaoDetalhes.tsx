@@ -280,6 +280,85 @@ export default function OperacaoDetalhes() {
               </CardContent>
             </Card>
           )}
+
+          {/* Recompras / Substituições */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ShieldAlert className="h-5 w-5 text-warning" />
+                Recompras e substituições
+              </CardTitle>
+              <CardDescription>
+                Solicitações registradas para títulos desta operação. Fluxo
+                proforma — não gera cobrança automática.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {solicitacoesOperacao.length === 0 && eventosLocais.length === 0 ? (
+                <p className="px-6 pb-6 text-sm text-muted-foreground">
+                  Nenhuma solicitação registrada.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      <TableHead>Responsável</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {solicitacoesOperacao.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-mono text-xs">{s.tituloNumero}</TableCell>
+                        <TableCell className="text-sm">{s.tipoAcao}</TableCell>
+                        <TableCell className="max-w-[260px] truncate text-xs" title={s.motivo}>
+                          {s.motivo}
+                        </TableCell>
+                        <TableCell className="text-xs">{s.responsavel}</TableCell>
+                        <TableCell><RecompraStatusBadge status={s.status} /></TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost">Atualizar</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {STATUS_RECOMPRA.map((st) => (
+                                <DropdownMenuItem
+                                  key={st}
+                                  onClick={() => {
+                                    recomprasStore.atualizarStatus(s.id, st);
+                                    toast.success(`Status atualizado para ${st}.`);
+                                  }}
+                                >
+                                  {st}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              {eventosLocais.length > 0 && (
+                <div className="border-t bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+                  <p className="mb-1 font-medium text-foreground">Eventos desta sessão</p>
+                  <ul className="space-y-1">
+                    {eventosLocais.map((e, i) => (
+                      <li key={i}>
+                        <span className="font-mono">{formatBR(e.data)}</span> — {e.texto}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Resumo financeiro */}
@@ -317,6 +396,19 @@ export default function OperacaoDetalhes() {
         onSalvar={handleSalvarDocumento}
         initialTipo={gerarTipo ?? undefined}
         initialOperacaoId={operacao.id}
+      />
+
+      <RecompraDialog
+        titulo={recompraTitulo}
+        operacaoId={operacao.id}
+        operacaoNumero={operacao.numero}
+        onClose={() => setRecompraTitulo(null)}
+        onSaved={(descricao) =>
+          setEventosLocais((prev) => [
+            { data: new Date().toISOString().slice(0, 10), texto: descricao },
+            ...prev,
+          ])
+        }
       />
     </div>
   );
