@@ -16,6 +16,7 @@ import OperacaoDetalhes from "./pages/OperacaoDetalhes";
 import Configuracoes from "./pages/Configuracoes";
 import Contratos from "./pages/Contratos";
 import Cobrancas from "./pages/Cobrancas";
+import Relatorios from "./pages/Relatorios";
 
 const queryClient = new QueryClient();
 
@@ -37,15 +38,7 @@ const App = () => (
             <Route path="/operacoes/:id" element={<OperacaoDetalhes />} />
             <Route path="/contratos" element={<Contratos />} />
             <Route path="/cobrancas" element={<Cobrancas />} />
-            <Route
-              path="/relatorios"
-              element={
-                <Placeholder
-                  title="Relatórios"
-                  description="Análises operacionais e indicadores gerenciais."
-                />
-              }
-            />
+            <Route path="/relatorios" element={<Relatorios />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
