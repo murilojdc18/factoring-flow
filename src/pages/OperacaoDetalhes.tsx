@@ -10,6 +10,7 @@ import {
   XCircle,
   Info,
   History,
+  ShieldAlert,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -41,6 +42,20 @@ import { toast } from "sonner";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
 import { documentosStore } from "@/lib/documentosStore";
 import { DocumentoGerado } from "@/data/mockDocumentosGerados";
+import { RecompraDialog } from "@/components/recompras/RecompraDialog";
+import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
+import {
+  STATUS_RECOMPRA,
+  recomprasStore,
+  useRecompras,
+} from "@/data/mockRecompras";
+import { Titulo } from "@/data/mockTitulos";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function OperacaoDetalhes() {
   const { id } = useParams();
@@ -52,6 +67,13 @@ export default function OperacaoDetalhes() {
     | "Borderô de títulos"
     | null
   >(null);
+
+  // Recompra/substituição
+  const { porOperacao, estado } = useRecompras();
+  const [recompraTitulo, setRecompraTitulo] = useState<Titulo | null>(null);
+  const [eventosLocais, setEventosLocais] = useState<
+    { data: string; texto: string }[]
+  >([]);
 
   const operacao = useMemo(() => mockOperacoes.find((o) => o.id === id), [id]);
   const cedente = useMemo(
@@ -89,6 +111,8 @@ export default function OperacaoDetalhes() {
   const podeCancelar = !["Liquidada", "Cancelada", "Recomprada"].includes(
     operacao.status,
   );
+
+  const solicitacoesOperacao = porOperacao(operacao.id);
 
   return (
     <div>
@@ -185,21 +209,39 @@ export default function OperacaoDetalhes() {
                     <TableHead>Emissão</TableHead>
                     <TableHead>Vencimento</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
+                    <TableHead>Recompra</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {titulos.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">Nenhum título encontrado.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">Nenhum título encontrado.</TableCell></TableRow>
                   )}
-                  {titulos.map((t) => (
-                    <TableRow key={t.id}>
-                      <TableCell className="font-mono text-xs">{t.numero}</TableCell>
-                      <TableCell className="text-sm">{t.sacadoNome}</TableCell>
-                      <TableCell className="text-sm">{formatBR(t.dataEmissao)}</TableCell>
-                      <TableCell className="text-sm">{formatBR(t.dataVencimento)}</TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">{formatBRL(t.valorFace)}</TableCell>
-                    </TableRow>
-                  ))}
+                  {titulos.map((t) => {
+                    const est = estado(t.id);
+                    return (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-mono text-xs">{t.numero}</TableCell>
+                        <TableCell className="text-sm">{t.sacadoNome}</TableCell>
+                        <TableCell className="text-sm">{formatBR(t.dataEmissao)}</TableCell>
+                        <TableCell className="text-sm">{formatBR(t.dataVencimento)}</TableCell>
+                        <TableCell className="text-right font-medium tabular-nums">{formatBRL(t.valorFace)}</TableCell>
+                        <TableCell>
+                          {est ? <RecompraStatusBadge status={est.status} /> : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setRecompraTitulo(t)}
+                          >
+                            <ShieldAlert className="mr-1 h-3.5 w-3.5" />
+                            Recompra
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -238,6 +280,85 @@ export default function OperacaoDetalhes() {
               </CardContent>
             </Card>
           )}
+
+          {/* Recompras / Substituições */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <ShieldAlert className="h-5 w-5 text-warning" />
+                Recompras e substituições
+              </CardTitle>
+              <CardDescription>
+                Solicitações registradas para títulos desta operação. Fluxo
+                proforma — não gera cobrança automática.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {solicitacoesOperacao.length === 0 && eventosLocais.length === 0 ? (
+                <p className="px-6 pb-6 text-sm text-muted-foreground">
+                  Nenhuma solicitação registrada.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Motivo</TableHead>
+                      <TableHead>Responsável</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {solicitacoesOperacao.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-mono text-xs">{s.tituloNumero}</TableCell>
+                        <TableCell className="text-sm">{s.tipoAcao}</TableCell>
+                        <TableCell className="max-w-[260px] truncate text-xs" title={s.motivo}>
+                          {s.motivo}
+                        </TableCell>
+                        <TableCell className="text-xs">{s.responsavel}</TableCell>
+                        <TableCell><RecompraStatusBadge status={s.status} /></TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost">Atualizar</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {STATUS_RECOMPRA.map((st) => (
+                                <DropdownMenuItem
+                                  key={st}
+                                  onClick={() => {
+                                    recomprasStore.atualizarStatus(s.id, st);
+                                    toast.success(`Status atualizado para ${st}.`);
+                                  }}
+                                >
+                                  {st}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              {eventosLocais.length > 0 && (
+                <div className="border-t bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+                  <p className="mb-1 font-medium text-foreground">Eventos desta sessão</p>
+                  <ul className="space-y-1">
+                    {eventosLocais.map((e, i) => (
+                      <li key={i}>
+                        <span className="font-mono">{formatBR(e.data)}</span> — {e.texto}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Resumo financeiro */}
@@ -275,6 +396,19 @@ export default function OperacaoDetalhes() {
         onSalvar={handleSalvarDocumento}
         initialTipo={gerarTipo ?? undefined}
         initialOperacaoId={operacao.id}
+      />
+
+      <RecompraDialog
+        titulo={recompraTitulo}
+        operacaoId={operacao.id}
+        operacaoNumero={operacao.numero}
+        onClose={() => setRecompraTitulo(null)}
+        onSaved={(descricao) =>
+          setEventosLocais((prev) => [
+            { data: new Date().toISOString().slice(0, 10), texto: descricao },
+            ...prev,
+          ])
+        }
       />
     </div>
   );

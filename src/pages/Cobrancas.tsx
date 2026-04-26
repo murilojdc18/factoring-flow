@@ -6,6 +6,7 @@ import {
   History,
   MessageSquarePlus,
   Search,
+  ShieldAlert,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,6 +64,12 @@ import {
   TIPOS_CONTATO,
   useCobrancas,
 } from "@/data/mockCobrancas";
+import {
+  EstadoRecompraTitulo,
+  useRecompras,
+} from "@/data/mockRecompras";
+import { RecompraDialog } from "@/components/recompras/RecompraDialog";
+import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
 import { formatBRL } from "@/lib/format";
 import { daysUntil, formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
@@ -128,6 +135,8 @@ export default function Cobrancas() {
 
   const [contatoTitulo, setContatoTitulo] = useState<Titulo | null>(null);
   const [obsTitulo, setObsTitulo] = useState<Titulo | null>(null);
+  const [recompraTitulo, setRecompraTitulo] = useState<Titulo | null>(null);
+  const { estado: getEstadoRecompra } = useRecompras();
 
   // Constrói linhas combinando título + estado efetivo
   const linhas = useMemo(() => {
@@ -268,6 +277,8 @@ export default function Cobrancas() {
                 onContato={setContatoTitulo}
                 onObs={setObsTitulo}
                 onStatus={aplicarStatus}
+                onRecompra={setRecompraTitulo}
+                getRecompra={getEstadoRecompra}
               />
             </TabsContent>
             <TabsContent value="vencidos" className="mt-4">
@@ -276,6 +287,8 @@ export default function Cobrancas() {
                 onContato={setContatoTitulo}
                 onObs={setObsTitulo}
                 onStatus={aplicarStatus}
+                onRecompra={setRecompraTitulo}
+                getRecompra={getEstadoRecompra}
                 showAtraso
               />
             </TabsContent>
@@ -285,6 +298,8 @@ export default function Cobrancas() {
                 onContato={setContatoTitulo}
                 onObs={setObsTitulo}
                 onStatus={aplicarStatus}
+                onRecompra={setRecompraTitulo}
+                getRecompra={getEstadoRecompra}
               />
             </TabsContent>
             <TabsContent value="historico" className="mt-4">
@@ -304,6 +319,12 @@ export default function Cobrancas() {
       <ObservacaoDialog
         titulo={obsTitulo}
         onClose={() => setObsTitulo(null)}
+      />
+
+      {/* Modal: Recompra / Substituição */}
+      <RecompraDialog
+        titulo={recompraTitulo}
+        onClose={() => setRecompraTitulo(null)}
       />
     </div>
   );
@@ -359,12 +380,16 @@ function TabelaTitulos({
   onContato,
   onObs,
   onStatus,
+  onRecompra,
+  getRecompra,
   showAtraso,
 }: {
   linhas: LinhaCobranca[];
   onContato: (t: Titulo) => void;
   onObs: (t: Titulo) => void;
   onStatus: (t: Titulo, s: StatusCobranca) => void;
+  onRecompra: (t: Titulo) => void;
+  getRecompra: (tituloId: string) => EstadoRecompraTitulo | undefined;
   showAtraso?: boolean;
 }) {
   if (linhas.length === 0) {
@@ -394,7 +419,9 @@ function TabelaTitulos({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {linhas.map(({ titulo, estado, dias }) => (
+          {linhas.map(({ titulo, estado, dias }) => {
+            const recompra = getRecompra(titulo.id);
+            return (
             <TableRow key={titulo.id}>
               <TableCell className="font-mono text-xs">{titulo.numero}</TableCell>
               <TableCell className="text-sm">{titulo.cedenteNome}</TableCell>
@@ -412,7 +439,12 @@ function TabelaTitulos({
                   <span className="text-muted-foreground">{dias}d</span>
                 )}
               </TableCell>
-              <TableCell><StatusBadge status={estado.status} /></TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  <StatusBadge status={estado.status} />
+                  {recompra && <RecompraStatusBadge status={recompra.status} />}
+                </div>
+              </TableCell>
               <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground" title={estado.ultimaAcao}>
                 {estado.ultimaAcao}
               </TableCell>
@@ -453,6 +485,10 @@ function TabelaTitulos({
                         Para recompra
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onRecompra(titulo)}>
+                        <ShieldAlert className="mr-2 h-4 w-4 text-warning" />
+                        Marcar para recompra/substituição
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onObs(titulo)}>
                         Adicionar observação
                       </DropdownMenuItem>
@@ -461,7 +497,8 @@ function TabelaTitulos({
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </div>
