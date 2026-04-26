@@ -59,6 +59,7 @@ import {
   STATUS_DOCUMENTO,
 } from "@/data/mockDocumentosGerados";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { exportarDocumentoPdf } from "@/lib/exportarPdf";
 import { documentosStore, useDocumentos } from "@/lib/documentosStore";
 
