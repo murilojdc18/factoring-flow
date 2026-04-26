@@ -274,6 +274,8 @@ export default function Cobrancas() {
                 onContato={setContatoTitulo}
                 onObs={setObsTitulo}
                 onStatus={aplicarStatus}
+                onRecompra={setRecompraTitulo}
+                getRecompra={getEstadoRecompra}
               />
             </TabsContent>
             <TabsContent value="vencidos" className="mt-4">
@@ -282,6 +284,8 @@ export default function Cobrancas() {
                 onContato={setContatoTitulo}
                 onObs={setObsTitulo}
                 onStatus={aplicarStatus}
+                onRecompra={setRecompraTitulo}
+                getRecompra={getEstadoRecompra}
                 showAtraso
               />
             </TabsContent>
@@ -291,6 +295,8 @@ export default function Cobrancas() {
                 onContato={setContatoTitulo}
                 onObs={setObsTitulo}
                 onStatus={aplicarStatus}
+                onRecompra={setRecompraTitulo}
+                getRecompra={getEstadoRecompra}
               />
             </TabsContent>
             <TabsContent value="historico" className="mt-4">
@@ -310,6 +316,12 @@ export default function Cobrancas() {
       <ObservacaoDialog
         titulo={obsTitulo}
         onClose={() => setObsTitulo(null)}
+      />
+
+      {/* Modal: Recompra / Substituição */}
+      <RecompraDialog
+        titulo={recompraTitulo}
+        onClose={() => setRecompraTitulo(null)}
       />
     </div>
   );
