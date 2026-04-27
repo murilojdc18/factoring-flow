@@ -474,3 +474,26 @@ function Linha({ label, value, tone }: { label: string; value: string; tone?: "n
     </div>
   );
 }
+
+function MiniStat({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "primary";
+}) {
+  return (
+    <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={`mt-1 truncate text-sm font-bold tabular-nums ${tone === "primary" ? "text-primary" : "text-foreground"}`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
