@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -237,8 +238,13 @@ export default function Contratos() {
             <TableBody>
               {filtrados.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                    Nenhum modelo encontrado.
+                  <TableCell colSpan={6} className="p-0">
+                    <EmptyState
+                      variant="inline"
+                      icon={FileSignature}
+                      title="Nenhum modelo encontrado"
+                      description="Crie um novo modelo de contrato ou ajuste a busca."
+                    />
                   </TableCell>
                 </TableRow>
               )}
@@ -296,15 +302,15 @@ export default function Contratos() {
                 <TableBody>
                   {documentos.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-12 text-center text-sm text-muted-foreground">
-                        Nenhum documento gerado. Use{" "}
-                        <button
-                          className="font-medium text-primary underline-offset-2 hover:underline"
-                          onClick={() => setGerarOpen(true)}
-                        >
-                          Gerar documento
-                        </button>{" "}
-                        para preencher um modelo a partir de uma operação.
+                      <TableCell colSpan={7} className="p-0">
+                        <EmptyState
+                          variant="inline"
+                          icon={FileText}
+                          title="Nenhum documento gerado"
+                          description="Preencha um modelo a partir de uma operação para gerar contratos, aditivos ou borderôs."
+                          actionLabel="Gerar documento"
+                          onAction={() => setGerarOpen(true)}
+                        />
                       </TableCell>
                     </TableRow>
                   )}

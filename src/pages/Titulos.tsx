@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -360,9 +361,14 @@ export default function Titulos() {
                   <TableRow>
                     <TableCell
                       colSpan={9}
-                      className="py-12 text-center text-sm text-muted-foreground"
+                      className="p-0"
                     >
-                      Nenhum título encontrado com os filtros atuais.
+                      <EmptyState
+                        variant="inline"
+                        icon={FileText}
+                        title="Nenhum título encontrado"
+                        description="Ajuste a busca ou os filtros para ver resultados."
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

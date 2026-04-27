@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
   TableBody,
@@ -283,9 +284,14 @@ export default function Sacados() {
                   <TableRow>
                     <TableCell
                       colSpan={10}
-                      className="py-12 text-center text-sm text-muted-foreground"
+                      className="p-0"
                     >
-                      Nenhum sacado encontrado com os filtros atuais.
+                      <EmptyState
+                        variant="inline"
+                        icon={Building2}
+                        title="Nenhum sacado encontrado"
+                        description="Ajuste a busca ou os filtros para ver resultados."
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (

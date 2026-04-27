@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Select,
   SelectContent,
@@ -121,8 +122,13 @@ export default function Operacoes() {
             <TableBody>
               {filtradas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
-                    Nenhuma operação encontrada.
+                  <TableCell colSpan={8} className="p-0">
+                    <EmptyState
+                      variant="inline"
+                      icon={Calculator}
+                      title="Nenhuma operação encontrada"
+                      description="Ajuste a busca ou os filtros para ver resultados."
+                    />
                   </TableCell>
                 </TableRow>
               )}

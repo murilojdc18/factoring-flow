@@ -13,6 +13,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { KpiCard } from "@/components/ui/kpi-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import {
   Table,
@@ -149,56 +151,25 @@ export default function Clientes() {
 
       {/* KPIs rápidos */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card className="shadow-card">
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Total
-              </p>
-              <p className="text-2xl font-bold tabular-nums">{totals.total}</p>
-            </div>
-            <Users className="h-5 w-5 text-primary" />
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Ativos
-              </p>
-              <p className="text-2xl font-bold tabular-nums text-success">
-                {totals.ativos}
-              </p>
-            </div>
-            <CheckCircle2 className="h-5 w-5 text-success" />
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Em análise
-              </p>
-              <p className="text-2xl font-bold tabular-nums text-warning">
-                {totals.analise}
-              </p>
-            </div>
-            <Clock className="h-5 w-5 text-warning" />
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="flex items-center justify-between p-4">
-            <div>
-              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Bloqueados
-              </p>
-              <p className="text-2xl font-bold tabular-nums text-destructive">
-                {totals.bloqueados}
-              </p>
-            </div>
-            <Ban className="h-5 w-5 text-destructive" />
-          </CardContent>
-        </Card>
+        <KpiCard label="Total" value={totals.total} icon={Users} tone="primary" />
+        <KpiCard
+          label="Ativos"
+          value={totals.ativos}
+          icon={CheckCircle2}
+          tone="success"
+        />
+        <KpiCard
+          label="Em análise"
+          value={totals.analise}
+          icon={Clock}
+          tone="warning"
+        />
+        <KpiCard
+          label="Bloqueados"
+          value={totals.bloqueados}
+          icon={Ban}
+          tone="destructive"
+        />
       </div>
 
       {/* Tabela */}
@@ -255,9 +226,35 @@ export default function Clientes() {
                   <TableRow>
                     <TableCell
                       colSpan={9}
-                      className="py-12 text-center text-sm text-muted-foreground"
+                      className="p-0"
                     >
-                      Nenhum cliente encontrado com os filtros atuais.
+                      <EmptyState
+                        variant="inline"
+                        icon={Users}
+                        title={
+                          busca || filtroStatus !== "Todos"
+                            ? "Nenhum cliente corresponde aos filtros"
+                            : "Nenhum cliente cadastrado"
+                        }
+                        description={
+                          busca || filtroStatus !== "Todos"
+                            ? "Ajuste a busca ou o filtro de status para ver mais resultados."
+                            : "Cadastre o primeiro cedente para começar a operar."
+                        }
+                        actionLabel={
+                          busca || filtroStatus !== "Todos"
+                            ? "Limpar filtros"
+                            : undefined
+                        }
+                        onAction={
+                          busca || filtroStatus !== "Todos"
+                            ? () => {
+                                setBusca("");
+                                setFiltroStatus("Todos");
+                              }
+                            : undefined
+                        }
+                      />
                     </TableCell>
                   </TableRow>
                 ) : (
