@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PermissionGate } from "@/components/auth/PermissionGate";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Select,
   SelectContent,
