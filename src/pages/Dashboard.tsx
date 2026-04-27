@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { KpiCard } from "@/components/ui/kpi-card";
 import {
   Table,
   TableBody,
@@ -41,56 +42,56 @@ const kpis = [
     value: "R$ 12.480.300",
     delta: "+4,2% vs. mês anterior",
     icon: Wallet,
-    tone: "text-primary",
+    tone: "primary" as const,
   },
   {
     label: "Total a vencer",
     value: "R$ 9.815.420",
     delta: "1.142 títulos",
     icon: CalendarClock,
-    tone: "text-success",
+    tone: "success" as const,
   },
   {
     label: "Total vencido",
     value: "R$ 348.760",
     delta: "62 títulos em atraso",
     icon: AlertTriangle,
-    tone: "text-destructive",
+    tone: "destructive" as const,
   },
   {
     label: "Operações no mês",
     value: "184",
     delta: "+12 vs. mês anterior",
     icon: Activity,
-    tone: "text-primary",
+    tone: "primary" as const,
   },
   {
     label: "Ticket médio",
     value: "R$ 67.840",
     delta: "+2,1% no trimestre",
     icon: Receipt,
-    tone: "text-accent",
+    tone: "accent" as const,
   },
   {
     label: "Taxa média praticada",
     value: "2,84% a.m.",
     delta: "-0,12 p.p. no mês",
     icon: Percent,
-    tone: "text-warning",
+    tone: "warning" as const,
   },
   {
     label: "Clientes ativos",
     value: "127",
     delta: "+5 este mês",
     icon: Users,
-    tone: "text-primary",
+    tone: "primary" as const,
   },
   {
     label: "Sacados ativos",
     value: "892",
     delta: "+34 este mês",
     icon: Building2,
-    tone: "text-primary",
+    tone: "primary" as const,
   },
 ];
 
@@ -165,23 +166,14 @@ export default function Dashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
-          <Card
+          <KpiCard
             key={kpi.label}
-            className="shadow-card transition-shadow hover:shadow-elevated"
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                {kpi.label}
-              </CardTitle>
-              <kpi.icon className={`h-4 w-4 ${kpi.tone}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground tabular-nums">
-                {kpi.value}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{kpi.delta}</p>
-            </CardContent>
-          </Card>
+            label={kpi.label}
+            value={kpi.value}
+            hint={kpi.delta}
+            icon={kpi.icon}
+            tone={kpi.tone}
+          />
         ))}
       </div>
 
