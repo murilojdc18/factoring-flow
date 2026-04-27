@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { EmptyState } from "@/components/ui/empty-state";
 import { mockOperacoes } from "@/data/mockOperacoes";
 import { mockClientes } from "@/data/mockClientes";
 import { mockTitulos } from "@/data/mockTitulos";
@@ -90,9 +91,13 @@ export default function OperacaoDetalhes() {
     return (
       <div>
         <PageHeader title="Operação não encontrada" />
-        <Button variant="outline" onClick={() => navigate("/operacoes")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-        </Button>
+        <EmptyState
+          icon={Info}
+          title="Operação não localizada"
+          description="A operação que você tentou acessar não existe ou pode ter sido removida."
+          actionLabel="Voltar para operações"
+          onAction={() => navigate("/operacoes")}
+        />
       </div>
     );
   }
@@ -118,6 +123,7 @@ export default function OperacaoDetalhes() {
   return (
     <div>
       <PageHeader
+        eyebrow="Operação"
         title={`Operação ${operacao.numero}`}
         description={`${operacao.cedenteNome} • ${formatBR(operacao.dataOperacao)}`}
         actions={
@@ -141,10 +147,12 @@ export default function OperacaoDetalhes() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           {/* Cabeçalho status + ações */}
-          <Card className="shadow-card">
-            <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+          <Card className="overflow-hidden border-primary/20 shadow-card">
+            <div className="bg-gradient-primary/5 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-muted/30 px-4 py-3">
               <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Status atual:</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Status atual
+                </span>
                 <OperacaoStatusBadge status={operacao.status} />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -171,6 +179,12 @@ export default function OperacaoDetalhes() {
                   </Button>
                 )}
               </div>
+            </div>
+            <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
+              <MiniStat label="Valor bruto" value={formatBRL(operacao.valorBruto)} />
+              <MiniStat label="Líquido" value={formatBRL(operacao.valorLiquido)} tone="primary" />
+              <MiniStat label="Títulos" value={String(operacao.quantidadeTitulos)} />
+              <MiniStat label="Prazo médio" value={`${operacao.prazoMedio}d`} />
             </CardContent>
           </Card>
 
@@ -216,7 +230,16 @@ export default function OperacaoDetalhes() {
                 </TableHeader>
                 <TableBody>
                   {titulos.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">Nenhum título encontrado.</TableCell></TableRow>
+                    <TableRow>
+                      <TableCell colSpan={7} className="p-0">
+                        <EmptyState
+                          variant="inline"
+                          icon={FileText}
+                          title="Nenhum título vinculado"
+                          description="Esta operação ainda não possui títulos associados."
+                        />
+                      </TableCell>
+                    </TableRow>
                   )}
                   {titulos.map((t) => {
                     const est = estado(t.id);
@@ -312,9 +335,12 @@ export default function OperacaoDetalhes() {
             </CardHeader>
             <CardContent className="p-0">
               {solicitacoesOperacao.length === 0 && eventosLocais.length === 0 ? (
-                <p className="px-6 pb-6 text-sm text-muted-foreground">
-                  Nenhuma solicitação registrada.
-                </p>
+                <EmptyState
+                  variant="inline"
+                  icon={ShieldAlert}
+                  title="Sem recompras ou substituições"
+                  description="Quando registradas, as solicitações aparecem aqui com seu status."
+                />
               ) : (
                 <Table>
                   <TableHeader>
