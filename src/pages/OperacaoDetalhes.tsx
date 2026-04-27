@@ -148,7 +148,7 @@ export default function OperacaoDetalhes() {
         <div className="space-y-6 lg:col-span-2">
           {/* Cabeçalho status + ações */}
           <Card className="overflow-hidden border-primary/20 shadow-card">
-            <div className="bg-gradient-primary/5 flex flex-wrap items-center justify-between gap-4 border-b border-border bg-muted/30 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-muted/30 px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Status atual
