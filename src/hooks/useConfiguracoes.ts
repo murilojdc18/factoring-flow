@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { isSupabaseEnabled } from "@/lib/dataSource";
 
 /**
@@ -78,7 +79,7 @@ export function useConfiguracoes() {
         .upsert(
           [{
             chave: CHAVE,
-            valor: params as unknown as Record<string, unknown>,
+            valor: params as unknown as Json,
             descricao: "Parâmetros financeiros globais do sistema",
           }],
           { onConflict: "chave" },
