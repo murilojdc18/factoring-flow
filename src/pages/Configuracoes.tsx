@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Info, Save, RotateCcw, ShieldCheck, ArrowRight, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -30,37 +30,18 @@ import {
   useCompliance,
 } from "@/data/mockCompliance";
 import { RiscoBadge } from "@/components/compliance/RiscoBadge";
-
-interface ParametrosFinanceiros {
-  taxaFatorMensal: number;
-  tarifaFixa: number;
-  tarifaPorTitulo: number;
-  percentualRetencao: number;
-  prazoMaximoDias: number;
-  limiteClientePadrao: number;
-  limiteSacadoPadrao: number;
-  diasToleranciaAtraso: number;
-  observacaoPadrao: string;
-  moeda: string;
-}
-
-const DEFAULTS: ParametrosFinanceiros = {
-  taxaFatorMensal: 3.5,
-  tarifaFixa: 150,
-  tarifaPorTitulo: 25,
-  percentualRetencao: 5,
-  prazoMaximoDias: 90,
-  limiteClientePadrao: 250000,
-  limiteSacadoPadrao: 100000,
-  diasToleranciaAtraso: 3,
-  observacaoPadrao:
-    "Operação sujeita à análise de crédito e revisão jurídica. Valores estimados.",
-  moeda: "BRL",
-};
+import {
+  PARAMETROS_DEFAULT as DEFAULTS,
+  type ParametrosFinanceiros,
+  useConfiguracoes,
+} from "@/hooks/useConfiguracoes";
 
 export default function Configuracoes() {
-  const [params, setParams] = useState<ParametrosFinanceiros>(DEFAULTS);
-  const [salvo, setSalvo] = useState<ParametrosFinanceiros>(DEFAULTS);
+  const { params: salvo, isLoading, isSaving, save, source } = useConfiguracoes();
+  const [params, setParams] = useState<ParametrosFinanceiros>(salvo);
+  useEffect(() => {
+    setParams(salvo);
+  }, [salvo]);
   const { politicas, analises } = useCompliance();
   const semClientes = alvosSemAnalise("Cliente").length;
   const semOps = alvosSemAnalise("Operação").length;
@@ -80,11 +61,20 @@ export default function Configuracoes() {
     update(key, (isNaN(n) ? 0 : n) as never);
   };
 
-  const handleSalvar = () => {
-    setSalvo(params);
-    toast.success("Parâmetros salvos.", {
-      description: "Alterações armazenadas em memória (mock).",
-    });
+  const handleSalvar = async () => {
+    try {
+      await save(params);
+      toast.success("Parâmetros salvos.", {
+        description:
+          source === "supabase"
+            ? "Alterações persistidas no banco."
+            : "Alterações armazenadas em memória (mock).",
+      });
+    } catch (e) {
+      toast.error("Não foi possível salvar.", {
+        description: e instanceof Error ? e.message : "Erro desconhecido.",
+      });
+    }
   };
 
   const handleResetar = () => {
@@ -106,10 +96,11 @@ export default function Configuracoes() {
             </Button>
             <Button
               onClick={handleSalvar}
-              disabled={!dirty}
+              disabled={!dirty || isSaving || isLoading}
               className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
             >
-              <Save className="mr-2 h-4 w-4" /> Salvar alterações
+              <Save className="mr-2 h-4 w-4" />
+              {isSaving ? "Salvando..." : "Salvar alterações"}
             </Button>
           </div>
         }

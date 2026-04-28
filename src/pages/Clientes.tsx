@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  mockClientes,
   STATUS_CLIENTE,
   type Cliente,
   type ClienteStatus,
@@ -52,12 +51,15 @@ import {
 } from "@/components/clientes/ClienteForm";
 import { ClienteDetalhes } from "@/components/clientes/ClienteDetalhes";
 import { formatBRL } from "@/lib/format";
+import { useClientes } from "@/hooks/useClientes";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 type Filtro = "Todos" | ClienteStatus;
 
 export default function Clientes() {
   const { toast } = useToast();
-  const [clientes, setClientes] = useState<Cliente[]>(mockClientes);
+  const { clientes, isLoading, error, create, update } = useClientes();
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<Filtro>("Todos");
 
@@ -103,32 +105,30 @@ export default function Clientes() {
     setDetalheOpen(true);
   }
 
-  function salvar(data: ClienteFormData) {
-    if (editing) {
-      setClientes((prev) =>
-        prev.map((c) => (c.id === editing.id ? { ...c, ...data } : c)),
-      );
+  async function salvar(data: ClienteFormData) {
+    try {
+      if (editing) {
+        await update(editing.id, data);
+        toast({
+          title: "Cliente atualizado",
+          description: `${data.razaoSocial} foi atualizado com sucesso.`,
+        });
+      } else {
+        await create(data);
+        toast({
+          title: "Cliente cadastrado",
+          description: `${data.razaoSocial} foi adicionado à carteira.`,
+        });
+      }
+      setFormOpen(false);
+      setEditing(null);
+    } catch (e) {
       toast({
-        title: "Cliente atualizado",
-        description: `${data.razaoSocial} foi atualizado com sucesso.`,
-      });
-    } else {
-      const novo: Cliente = {
-        ...data,
-        id: `CLI-${String(clientes.length + 1).padStart(4, "0")}`,
-        totalEmAberto: 0,
-        totalVencido: 0,
-        qtdTitulos: 0,
-        criadoEm: new Date().toISOString().slice(0, 10),
-      };
-      setClientes((prev) => [novo, ...prev]);
-      toast({
-        title: "Cliente cadastrado",
-        description: `${data.razaoSocial} foi adicionado à carteira.`,
+        title: "Erro ao salvar",
+        description: e instanceof Error ? e.message : "Tente novamente.",
+        variant: "destructive",
       });
     }
-    setFormOpen(false);
-    setEditing(null);
   }
 
   return (
@@ -222,7 +222,24 @@ export default function Clientes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtrados.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="p-0">
+                      <LoadingState label="Carregando clientes..." />
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="p-0">
+                      <ErrorState
+                        title="Não foi possível carregar"
+                        description={
+                          error instanceof Error ? error.message : "Erro inesperado."
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : filtrados.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={9}
