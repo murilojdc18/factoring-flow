@@ -22,14 +22,20 @@ export interface NameLookup {
 export function rowToTitulo(row: TituloRow, lookup?: NameLookup): Titulo {
   const anexosRaw = Array.isArray(row.anexos) ? row.anexos : [];
   const anexos: AnexoSimulado[] = anexosRaw
-    .filter((a): a is Record<string, unknown> => typeof a === "object" && a !== null)
-    .map((a, i) => ({
-      id: String(a.id ?? `ANX-${i}`),
-      nome: String(a.nome ?? ""),
-      tipo: (a.tipo as AnexoSimulado["tipo"]) ?? "Nota fiscal",
-      tamanhoKb: Number(a.tamanhoKb ?? 0),
-      enviadoEm: String(a.enviadoEm ?? ""),
-    }));
+    .filter(
+      (a): a is Record<string, unknown> =>
+        typeof a === "object" && a !== null && !Array.isArray(a),
+    )
+    .map((a, i) => {
+      const obj = a as Record<string, unknown>;
+      return {
+        id: String(obj.id ?? `ANX-${i}`),
+        nome: String(obj.nome ?? ""),
+        tipo: (obj.tipo as AnexoSimulado["tipo"]) ?? "Nota fiscal",
+        tamanhoKb: Number(obj.tamanhoKb ?? 0),
+        enviadoEm: String(obj.enviadoEm ?? ""),
+      };
+    });
 
   return {
     id: row.id,
