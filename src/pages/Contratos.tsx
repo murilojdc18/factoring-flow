@@ -327,11 +327,15 @@ export default function Contratos() {
                       <TableCell>
                         <Select
                           value={d.status}
-                          onValueChange={(v) =>
-                            documentosStore.update(d.id, {
-                              status: v as DocumentoGerado["status"],
-                            })
-                          }
+                          onValueChange={(v) => {
+                            const novoStatus = v as DocumentoGerado["status"];
+                            documentosStore.update(d.id, { status: novoStatus });
+                            // TODO(n8n): Integração externa será implementada futuramente
+                            // via Edge Function segura (evento `documento_aprovado_internamente`).
+                            // Nesta fase, a aprovação interna é apenas local — não dispara webhook,
+                            // não exige N8N_WEBHOOK_DOCUMENTOS_URL nem N8N_WEBHOOK_SECRET, e não
+                            // bloqueia o fluxo caso esses secrets não existam.
+                          }}
                         >
                           <SelectTrigger className="h-8 w-[180px] text-xs">
                             <SelectValue />
