@@ -20,7 +20,7 @@ export interface NameLookup {
  * Anexos JSONB legados são tolerados, mas a fonte oficial é a tabela `anexos`.
  */
 export function rowToTitulo(row: TituloRow, lookup?: NameLookup): Titulo {
-  const anexosRaw = Array.isArray(row.anexos) ? row.anexos : [];
+  const anexosRaw = (Array.isArray(row.anexos) ? row.anexos : []) as unknown[];
   const anexos: AnexoSimulado[] = anexosRaw
     .filter(
       (a): a is Record<string, unknown> =>
