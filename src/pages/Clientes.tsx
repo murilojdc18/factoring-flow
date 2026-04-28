@@ -222,7 +222,24 @@ export default function Clientes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtrados.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="p-0">
+                      <LoadingState label="Carregando clientes..." />
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="p-0">
+                      <ErrorState
+                        title="Não foi possível carregar"
+                        description={
+                          error instanceof Error ? error.message : "Erro inesperado."
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : filtrados.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={9}
