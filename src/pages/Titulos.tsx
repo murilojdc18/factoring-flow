@@ -40,13 +40,15 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  mockTitulos,
   STATUS_TITULO,
   type Titulo,
   type TituloStatus,
 } from "@/data/mockTitulos";
-import { mockClientes } from "@/data/mockClientes";
-import { mockSacados } from "@/data/mockSacados";
+import { useTitulos } from "@/hooks/useTitulos";
+import { useClientes } from "@/hooks/useClientes";
+import { useSacados } from "@/hooks/useSacados";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { TituloStatusBadge } from "@/components/titulos/StatusBadge";
 import {
   TituloForm,
@@ -67,7 +69,9 @@ type FiltroVenc =
 
 export default function Titulos() {
   const { toast } = useToast();
-  const [titulos, setTitulos] = useState<Titulo[]>(mockTitulos);
+  const { titulos, isLoading, error, create, update } = useTitulos();
+  const { clientes: mockClientes } = useClientes();
+  const { sacados: mockSacados } = useSacados();
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("Todos");
   const [filtroCedente, setFiltroCedente] = useState<string>("Todos");
@@ -147,29 +151,30 @@ export default function Titulos() {
     setDetalheOpen(true);
   }
 
-  function salvar(data: TituloFormData) {
-    if (editing) {
-      setTitulos((prev) =>
-        prev.map((t) => (t.id === editing.id ? { ...t, ...data } : t)),
-      );
+  async function salvar(data: TituloFormData) {
+    try {
+      if (editing) {
+        await update(editing.id, data);
+        toast({
+          title: "Título atualizado",
+          description: `${data.numero} foi atualizado com sucesso.`,
+        });
+      } else {
+        await create(data);
+        toast({
+          title: "Título lançado",
+          description: `${data.numero} foi adicionado à carteira.`,
+        });
+      }
+      setFormOpen(false);
+      setEditing(null);
+    } catch (e) {
       toast({
-        title: "Título atualizado",
-        description: `${data.numero} foi atualizado com sucesso.`,
-      });
-    } else {
-      const novo: Titulo = {
-        ...data,
-        id: `TIT-${10300 + titulos.length}`,
-        criadoEm: new Date().toISOString().slice(0, 10),
-      };
-      setTitulos((prev) => [novo, ...prev]);
-      toast({
-        title: "Título lançado",
-        description: `${data.numero} foi adicionado à carteira.`,
+        title: "Erro ao salvar",
+        description: e instanceof Error ? e.message : "Tente novamente.",
+        variant: "destructive",
       });
     }
-    setFormOpen(false);
-    setEditing(null);
   }
 
   return (
