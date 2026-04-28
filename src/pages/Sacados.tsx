@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  mockSacados,
   STATUS_SACADO,
   type Sacado,
   type SacadoStatus,
@@ -56,13 +55,16 @@ import {
 } from "@/components/sacados/SacadoForm";
 import { SacadoDetalhes } from "@/components/sacados/SacadoDetalhes";
 import { formatBRL } from "@/lib/format";
+import { useSacados } from "@/hooks/useSacados";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 type FiltroStatus = "Todos" | SacadoStatus;
 type FiltroTipo = "Todos" | TipoPessoa;
 
 export default function Sacados() {
   const { toast } = useToast();
-  const [sacados, setSacados] = useState<Sacado[]>(mockSacados);
+  const { sacados, isLoading, error, create, update } = useSacados();
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>("Todos");
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipo>("Todos");
@@ -110,33 +112,30 @@ export default function Sacados() {
     setDetalheOpen(true);
   }
 
-  function salvar(data: SacadoFormData) {
-    if (editing) {
-      setSacados((prev) =>
-        prev.map((s) => (s.id === editing.id ? { ...s, ...data } : s)),
-      );
+  async function salvar(data: SacadoFormData) {
+    try {
+      if (editing) {
+        await update(editing.id, data);
+        toast({
+          title: "Sacado atualizado",
+          description: `${data.nome} foi atualizado com sucesso.`,
+        });
+      } else {
+        await create(data);
+        toast({
+          title: "Sacado cadastrado",
+          description: `${data.nome} foi adicionado.`,
+        });
+      }
+      setFormOpen(false);
+      setEditing(null);
+    } catch (e) {
       toast({
-        title: "Sacado atualizado",
-        description: `${data.nome} foi atualizado com sucesso.`,
-      });
-    } else {
-      const novo: Sacado = {
-        ...data,
-        id: `SAC-${String(sacados.length + 1).padStart(4, "0")}`,
-        totalEmAberto: 0,
-        totalVencido: 0,
-        titulosPagos: 0,
-        titulosEmAtraso: 0,
-        criadoEm: new Date().toISOString().slice(0, 10),
-      };
-      setSacados((prev) => [novo, ...prev]);
-      toast({
-        title: "Sacado cadastrado",
-        description: `${data.nome} foi adicionado.`,
+        title: "Erro ao salvar",
+        description: e instanceof Error ? e.message : "Tente novamente.",
+        variant: "destructive",
       });
     }
-    setFormOpen(false);
-    setEditing(null);
   }
 
   return (
@@ -280,7 +279,23 @@ export default function Sacados() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtrados.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="p-0">
+                      <LoadingState label="Carregando sacados..." />
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={10} className="p-0">
+                      <ErrorState
+                        description={
+                          error instanceof Error ? error.message : "Erro inesperado."
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : filtrados.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={10}
