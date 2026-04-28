@@ -76,11 +76,11 @@ export function useConfiguracoes() {
       const { error } = await supabase
         .from("configuracoes_financeiras")
         .upsert(
-          {
+          [{
             chave: CHAVE,
             valor: params as unknown as Record<string, unknown>,
             descricao: "Parâmetros financeiros globais do sistema",
-          },
+          }],
           { onConflict: "chave" },
         );
       if (error) throw error;
