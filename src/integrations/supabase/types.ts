@@ -315,6 +315,8 @@ export type Database = {
           modelo_id: string | null
           modelo_nome: string
           operacao_id: string | null
+          status: Database["public"]["Enums"]["documento_gerado_status"]
+          updated_at: string
           variaveis_preenchidas: Json
         }
         Insert: {
@@ -326,6 +328,8 @@ export type Database = {
           modelo_id?: string | null
           modelo_nome?: string
           operacao_id?: string | null
+          status?: Database["public"]["Enums"]["documento_gerado_status"]
+          updated_at?: string
           variaveis_preenchidas?: Json
         }
         Update: {
@@ -337,6 +341,8 @@ export type Database = {
           modelo_id?: string | null
           modelo_nome?: string
           operacao_id?: string | null
+          status?: Database["public"]["Enums"]["documento_gerado_status"]
+          updated_at?: string
           variaveis_preenchidas?: Json
         }
         Relationships: [
@@ -894,6 +900,11 @@ export type Database = {
         | "Aprovado com ressalvas"
         | "Reprovado"
         | "Pendente"
+      documento_gerado_status:
+        | "Rascunho"
+        | "Em revisão"
+        | "Aprovado internamente"
+        | "Cancelado"
       integracao_status: "sucesso" | "erro" | "pendente"
       modelo_documento_status: "Ativo" | "Inativo" | "Rascunho"
       operacao_status:
@@ -1095,6 +1106,12 @@ export const Constants = {
         "Aprovado com ressalvas",
         "Reprovado",
         "Pendente",
+      ],
+      documento_gerado_status: [
+        "Rascunho",
+        "Em revisão",
+        "Aprovado internamente",
+        "Cancelado",
       ],
       integracao_status: ["sucesso", "erro", "pendente"],
       modelo_documento_status: ["Ativo", "Inativo", "Rascunho"],
