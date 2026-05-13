@@ -29,3 +29,9 @@ dist-ssr
 
 # Supabase CLI temporary files
 supabase/.temp/
+
+# Claude Code MCP config (contains tokens)
+.mcp.json
+
+# Claude Code local settings
+.claude/
