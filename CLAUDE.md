@@ -102,7 +102,7 @@ Ordem de prioridade:
 1. **Sistema 100% mock** — `dataSource.ts` flags todas false. Tudo desaparece no F5.
 2. ~~**Signup público** na `/auth` permite qualquer um criar conta.~~ ✅ Resolvido em 2026-05-14 (formulário de cadastro removido do frontend e "Enable signups" desligado no painel Supabase).
 3. **RLS de SELECT abertas** (`using (true)`) em quase todas as tabelas de domínio.
-4. **Bug "Sem acesso a esta área"** mesmo para perfil administrador (descoberto 2026-05-11).
+4. ~~**Bug "Sem acesso a esta área"** mesmo para perfil administrador (descoberto 2026-05-11).~~ ✅ Resolvido em 2026-05-14 (race condition em `AuthContext.onAuthStateChange` — `loading` não era gerenciado durante o carregamento de roles pós-login).
 5. **`simuladorCalc.ts` sem testes** — calcula deságio, retenção, líquido das operações.
 6. ~~**2 lockfiles** coexistindo (bun.lockb + package-lock.json) — decisão: manter npm.~~ ✅ Resolvido em 2026-05-14 (bun.lockb removido, `.gitignore` atualizado).
 7. **`tsconfig` não-estrito** (`strictNullChecks: false`).
