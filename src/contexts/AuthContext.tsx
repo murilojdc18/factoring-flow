@@ -55,12 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
+        setLoading(true);
         // defer para evitar deadlock no callback do auth
         setTimeout(() => {
-          fetchRoles(sess.user.id);
+          fetchRoles(sess.user.id).finally(() => setLoading(false));
         }, 0);
       } else {
         setRoles([]);
+        setLoading(false);
       }
     });
 
