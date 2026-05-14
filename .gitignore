@@ -35,3 +35,7 @@ supabase/.temp/
 
 # Claude Code local settings
 .claude/
+
+# Bun (não usamos — projeto padroniza em npm)
+bun.lockb
+bunfig.toml
