@@ -104,7 +104,7 @@ Ordem de prioridade:
 3. **RLS de SELECT abertas** (`using (true)`) em quase todas as tabelas de domínio.
 4. **Bug "Sem acesso a esta área"** mesmo para perfil administrador (descoberto 2026-05-11).
 5. **`simuladorCalc.ts` sem testes** — calcula deságio, retenção, líquido das operações.
-6. **2 lockfiles** coexistindo (bun.lockb + package-lock.json) — decisão: manter npm.
+6. ~~**2 lockfiles** coexistindo (bun.lockb + package-lock.json) — decisão: manter npm.~~ ✅ Resolvido em 2026-05-14 (bun.lockb removido, `.gitignore` atualizado).
 7. **`tsconfig` não-estrito** (`strictNullChecks: false`).
 8. **Mappers e hooks faltantes** para operacoes, cobrancas, compliance, contratos, documentos.
 
