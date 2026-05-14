@@ -23,11 +23,6 @@ interface AuthContextValue {
   roles: AppRole[];
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (
-    email: string,
-    password: string,
-    nomeCompleto: string,
-  ) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   can: (area: AppArea, action?: AppAction) => boolean;
   canViewArea: (area: AppArea) => boolean;
@@ -93,21 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return error ? { error: error.message } : {};
   }, []);
 
-  const signUp = useCallback(
-    async (email: string, password: string, nomeCompleto: string) => {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: { nome_completo: nomeCompleto },
-        },
-      });
-      return error ? { error: error.message } : {};
-    },
-    [],
-  );
-
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
@@ -128,12 +108,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles,
       loading,
       signIn,
-      signUp,
       signOut,
       can,
       canViewArea,
     }),
-    [session, user, roles, loading, signIn, signUp, signOut, can, canViewArea],
+    [session, user, roles, loading, signIn, signOut, can, canViewArea],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
