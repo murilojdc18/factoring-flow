@@ -12,11 +12,15 @@ export function formatBR(date: string): string {
 
 /**
  * Dias até a data (positivo = futuro, negativo = passado).
+ *
+ * @param dataReferencia data usada como "hoje" no cálculo (default = new Date()).
+ *   Quando omitido, o comportamento é idêntico ao anterior.
  */
-export function daysUntil(dateISO: string): number {
+export function daysUntil(dateISO: string, dataReferencia?: Date): number {
   const d = parseISO(dateISO);
   d.setHours(0, 0, 0, 0);
-  const today = new Date();
+  // Clona o Date recebido para não mutar o objeto do chamador no setHours.
+  const today = dataReferencia ? new Date(dataReferencia.getTime()) : new Date();
   today.setHours(0, 0, 0, 0);
   return Math.round((d.getTime() - today.getTime()) / 86_400_000);
 }
