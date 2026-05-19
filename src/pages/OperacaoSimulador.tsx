@@ -1,6 +1,15 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calculator, FileCheck2, Info } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Calculator,
+  CalendarIcon,
+  FileCheck2,
+  Info,
+} from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +18,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -30,6 +45,7 @@ import { mockClientes } from "@/data/mockClientes";
 import { mockTitulos } from "@/data/mockTitulos";
 import { formatBRL } from "@/lib/format";
 import { formatBR, daysUntil } from "@/lib/dateUtils";
+import { cn } from "@/lib/utils";
 import {
   PARAMETROS_DEFAULT,
   SimuladorParametros,
@@ -42,6 +58,7 @@ export default function OperacaoSimulador() {
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [params, setParams] = useState<SimuladorParametros>(PARAMETROS_DEFAULT);
   const [observacoes, setObservacoes] = useState("");
+  const [dataBase, setDataBase] = useState<Date>(new Date());
 
   const cedentesElegiveis = useMemo(
     () => mockClientes.filter((c) => c.status === "Ativo"),
@@ -51,9 +68,12 @@ export default function OperacaoSimulador() {
   const titulosDoCliente = useMemo(() => {
     if (!cedenteId) return [];
     return mockTitulos.filter(
-      (t) => t.cedenteId === cedenteId && t.status === "Disponível",
+      (t) =>
+        t.cedenteId === cedenteId &&
+        t.status === "Disponível" &&
+        daysUntil(t.dataVencimento, dataBase) >= 0,
     );
-  }, [cedenteId]);
+  }, [cedenteId, dataBase]);
 
   const titulosSelecionados = useMemo(
     () => titulosDoCliente.filter((t) => selecionados.has(t.id)),
@@ -61,8 +81,8 @@ export default function OperacaoSimulador() {
   );
 
   const resultado = useMemo(
-    () => calcularSimulacao(titulosSelecionados, params),
-    [titulosSelecionados, params],
+    () => calcularSimulacao(titulosSelecionados, params, dataBase),
+    [titulosSelecionados, params, dataBase],
   );
 
   const handleCedenteChange = (id: string) => {
@@ -89,12 +109,18 @@ export default function OperacaoSimulador() {
 
   const updateParam = (k: keyof SimuladorParametros, v: string) => {
     const num = parseFloat(v.replace(",", "."));
-    setParams((p) => ({ ...p, [k]: isNaN(num) ? 0 : num }));
+    // Regra E: defesa contra negativo mesmo se o min="0" do input for ignorado.
+    setParams((p) => ({ ...p, [k]: isNaN(num) ? 0 : Math.max(0, num) }));
   };
 
   const gerarOperacao = () => {
     if (titulosSelecionados.length === 0) {
       toast.error("Selecione ao menos um título.");
+      return;
+    }
+    // Regra D: defesa simétrica ao botão desabilitado.
+    if (resultado.liquidoInvalido) {
+      toast.error("Líquido negativo — revise os parâmetros antes de gerar.");
       return;
     }
     toast.success("Operação simulada gerada (proforma).", {
@@ -103,6 +129,13 @@ export default function OperacaoSimulador() {
   };
 
   const cedenteSelecionado = cedentesElegiveis.find((c) => c.id === cedenteId);
+
+  // Regra G: limite disponível = limite operacional − total já em aberto.
+  const limiteDisponivel = cedenteSelecionado
+    ? cedenteSelecionado.limiteOperacional - cedenteSelecionado.totalEmAberto
+    : 0;
+  const excedeLimite =
+    !!cedenteSelecionado && resultado.valorBruto > limiteDisponivel;
 
   return (
     <div>
@@ -192,7 +225,7 @@ export default function OperacaoSimulador() {
             <CardContent>
               {cedenteId && titulosDoCliente.length === 0 && (
                 <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Nenhum título com status "Disponível" para este cedente.
+                  Nenhum título disponível para este cedente nesta data-base.
                 </p>
               )}
               {titulosDoCliente.length > 0 && (
@@ -219,7 +252,7 @@ export default function OperacaoSimulador() {
                     </TableHeader>
                     <TableBody>
                       {titulosDoCliente.map((t) => {
-                        const dias = daysUntil(t.dataVencimento);
+                        const dias = daysUntil(t.dataVencimento, dataBase);
                         const checked = selecionados.has(t.id);
                         return (
                           <TableRow
@@ -267,12 +300,18 @@ export default function OperacaoSimulador() {
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Data-base da operação</Label>
+                <DataBasePicker value={dataBase} onChange={setDataBase} />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="taxa">Taxa de fator / deságio (% a.m.)</Label>
                 <Input
                   id="taxa"
                   type="number"
                   step="0.01"
+                  min="0"
+                  max="50"
                   value={params.taxaFatorMensal}
                   onChange={(e) =>
                     updateParam("taxaFatorMensal", e.target.value)
@@ -285,6 +324,8 @@ export default function OperacaoSimulador() {
                   id="retencao"
                   type="number"
                   step="0.1"
+                  min="0"
+                  max="100"
                   value={params.percentualRetencao}
                   onChange={(e) =>
                     updateParam("percentualRetencao", e.target.value)
@@ -297,6 +338,7 @@ export default function OperacaoSimulador() {
                   id="tarifaFixa"
                   type="number"
                   step="0.01"
+                  min="0"
                   value={params.tarifaFixa}
                   onChange={(e) => updateParam("tarifaFixa", e.target.value)}
                 />
@@ -307,6 +349,7 @@ export default function OperacaoSimulador() {
                   id="tarifaPorTitulo"
                   type="number"
                   step="0.01"
+                  min="0"
                   value={params.tarifaPorTitulo}
                   onChange={(e) =>
                     updateParam("tarifaPorTitulo", e.target.value)
@@ -389,11 +432,40 @@ export default function OperacaoSimulador() {
                 </p>
               </div>
 
+              {excedeLimite && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Limite do cedente excedido</AlertTitle>
+                  <AlertDescription>
+                    O valor bruto desta operação (
+                    {formatBRL(resultado.valorBruto)}) ultrapassa o limite
+                    disponível do cedente ({formatBRL(limiteDisponivel)}). A
+                    simulação continua, mas a operação exigirá revisão de
+                    limite antes de ser concluída.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {resultado.liquidoInvalido && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Líquido negativo</AlertTitle>
+                  <AlertDescription>
+                    O líquido ao cedente ficou negativo com os parâmetros
+                    atuais. Revise taxa, tarifas, retenção ou os títulos
+                    selecionados antes de gerar a operação.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <Button
                 className="w-full"
                 size="lg"
                 onClick={gerarOperacao}
-                disabled={resultado.quantidadeTitulos === 0}
+                disabled={
+                  resultado.quantidadeTitulos === 0 ||
+                  resultado.liquidoInvalido
+                }
               >
                 <FileCheck2 className="mr-2 h-4 w-4" />
                 Gerar operação a partir da simulação
@@ -403,6 +475,42 @@ export default function OperacaoSimulador() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Regra F: seletor da data-base. Mesmo idiom (Popover + Calendar + date-fns)
+// já usado no TituloForm, mas operando sobre Date (não ISO string), porque é
+// o que calcularSimulacao espera como 3º argumento.
+function DataBasePicker({
+  value,
+  onChange,
+}: {
+  value: Date;
+  onChange: (d: Date) => void;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-start text-left font-normal sm:w-auto"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {format(value, "dd/MM/yyyy", { locale: ptBR })}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={(d) => d && onChange(d)}
+          initialFocus
+          locale={ptBR}
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 
