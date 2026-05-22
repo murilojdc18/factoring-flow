@@ -112,6 +112,12 @@ Diagnóstico completo: `DIAGNOSTICO_INICIAL.md` na raiz.
 
 ---
 
+## Notas de ambiente (Windows)
+
+- **Encoding:** `type` e `Get-Content` sem `-Encoding` leem como Windows-1252 e mostram acentos errados em arquivos UTF-8 (ex.: "Vitória" vira "VitÃ³ria"). Sempre usar `Get-Content -Encoding UTF8` ou inspeção de bytes (`[System.IO.File]::ReadAllBytes`) para verificar — `[Console]::OutputEncoding = UTF8` NÃO resolve, pois só afeta a saída, não a leitura.
+
+---
+
 ## Decisões de negócio já tomadas
 
 - **Estrutura jurídica:** ainda não definida (pendente com advogado tributarista).
