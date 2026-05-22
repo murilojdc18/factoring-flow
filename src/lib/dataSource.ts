@@ -15,17 +15,22 @@ export const USE_SUPABASE = {
   configuracoes: false,
   // Ligar `clientes` ativa o Supabase APENAS nos consumidores que passam pelo
   // hook useClientes (página Clientes e lookup de cedente em Titulos).
-  // OperacaoSimulador, Relatorios, OperacaoDetalhes, TituloForm e
-  // preencherDocumento leem `mockClientes` direto e NÃO mudam com esta flag —
+  // OperacaoSimulador, Relatorios, OperacaoDetalhes e preencherDocumento leem
+  // `mockClientes` direto e NÃO mudam com esta flag —
   // cada um migra quando titulos/operacoes forem ligadas (decisão da 2.1).
   clientes: true,
   // Ligar `sacados` ativa o Supabase APENAS nos consumidores que passam pelo
-  // hook useSacados (página Sacados e filtro de sacado em Titulos). TituloForm,
+  // hook useSacados (página Sacados e filtro de sacado em Titulos).
   // Relatorios e preencherDocumento leem `mockSacados` direto e NÃO mudam com
   // esta flag — cada um migra quando titulos/relatorios/documentos forem
   // ligados (decisão da 2.2).
   sacados: true,
-  titulos: false,
+  // Ligar `titulos` ativa o Supabase APENAS nos consumidores que passam pelo
+  // hook useTitulos (página Titulos: lista + TituloForm). Cobrancas,
+  // OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento leem
+  // `mockTitulos` direto e NÃO mudam com esta flag — cada um migra quando
+  // operacoes/cobrancas/relatorios/documentos forem ligados (decisão da 2.3).
+  titulos: true,
   operacoes: false,
   contratos: false,
   cobrancas: false,
