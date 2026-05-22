@@ -58,3 +58,60 @@ Registradas aqui para não serem esquecidas. Mover para a seção de decisões q
 ---
 
 *Última atualização: 2026-05-14*
+
+---
+
+## 2026-05 — Decisões de negócio (checklist com sócio)
+
+> Respostas do checklist `Checklist_Decisoes_Negocio.docx` consolidadas com o sócio em 22/05/2026.
+> Documento original: gerado em 14/05/2026.
+
+### Decisão 1 — Estrutura jurídica
+**Decidido:** Factoring (tradicional).
+**Status:** ✅ definido.
+**Implicações no sistema:** tributação calculada como factoring (PIS/COFINS/ISS sobre deságio). Modelo de contrato segue padrão de factoring de mercado.
+
+### Decisão 2 — Contador
+**Decidido:** Contador já contratado. Regime tributário: **Lucro Real**.
+**Status:** ✅ definido.
+**Implicações no sistema:** quando a Pergunta 8 do simulador for revisitada, exibir tributos de acordo com Lucro Real.
+
+### Decisão 3 — Tomador-alvo (perfil de cedente)
+**Decidido:** Sem perfil específico no momento. "Atendemos quem vier" enquanto se constrói carteira; afunilar no futuro.
+**Status:** 🟡 conscientemente em aberto.
+**Implicações no sistema:** cadastro de cliente fica com campos genéricos. Sem validação específica por setor/porte. Revisitar em ~3 meses.
+
+### Decisão 4 — Funding
+**Decidido:** Aproximadamente R$ 1.000.000 disponível (talvez mais).
+**Status:** ✅ definido.
+**Implicações no sistema:** limite operacional padrão e tamanho de carteira inicial devem ser configurados com base nesse valor. Política de risco a definir.
+
+### Decisão 5 — Ticket médio e prazo médio
+**Decidido:** Sem definição agora. "Construindo portfólio."
+**Status:** 🟡 conscientemente em aberto.
+**Implicações no sistema:** sem alerta de "operação fora do padrão" até definição. Revisitar quando houver volume real.
+
+### Decisão 6 — Política de taxa
+**Decidido:** Manter taxa/tarifa como campos variáveis por operação. Sem valores fixos padrão impostos pelo sistema. A estrutura de cálculo (tarifa fixa + tarifa por título) está validada no `simulador-decisoes-consolidado.md`.
+**Status:** ✅ definido.
+**Implicações no sistema:** seed (2.9) **não** define valores padrão obrigatórios. Defaults atuais (R$ 150 fixa, R$ 25 por título, taxa 3,5%) ficam apenas como sugestão de preenchimento.
+
+### Decisão 7 — Política de risco
+**Decidido:** Ainda não temos definição.
+**Status:** ❌ pendente.
+**Implicações no sistema:** sistema **só exibe** limite do cedente (Regra G já implementada como alerta, não trava). Quando definir, criar regras de bloqueio.
+
+### Decisão 8 — Registradora (CERC, TAG ou CIP)
+**Decidido:** Aguardando orientação. Insegurança regulatória registrada.
+**Status:** ❌ pendente. **Conversa separada será aberta com Claude para entender o panorama.**
+**Implicações no sistema:** sem integração de registro de duplicatas. Não bloqueia desenvolvimento da Fase 2.
+
+### Decisão 9 — KYC / PLD / COAF
+**Decidido:** Ainda não temos definição.
+**Status:** ❌ pendente. Mesma conversa separada da Decisão 8.
+**Implicações no sistema:** módulo de compliance fica genérico até a política ser definida. Cadastro de clientes não bloqueia por documentos faltantes nesta fase.
+
+### Notas adicionais
+
+- Sobre estrutura/decisões "deliberadamente em aberto" (3, 5, 7): aceitas como estratégia de início consciente. A consequência no código é que o sistema vai ser **mais permissivo e menos validador** nas fases iniciais. Plano: revisitar trimestralmente.
+- Sobre Decisões 8 e 9: há risco regulatório real (factoring tem obrigações específicas perante BACEN/COAF). A insegurança expressada pelo Murilo é legítima e deve ser endereçada com advogado antes da operação real começar.
