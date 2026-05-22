@@ -13,6 +13,41 @@ import { useSacados } from "@/hooks/useSacados";
 
 const QUERY_KEY = ["titulos"] as const;
 
+/**
+ * Traduz erros do Postgres/Supabase para mensagens amigáveis ao usuário.
+ * 23503 = foreign_key_violation: o cedente ou sacado escolhido não existe mais.
+ * As FKs cedente_id/sacado_id são ON DELETE RESTRICT, então isso ocorre quando
+ * a parte foi removida entre o carregamento das listas e o envio do formulário.
+ * 23514 = check_violation: algum valor fere uma restrição da tabela. Sempre
+ * retorna uma instância de Error para o toast da página exibir a mensagem.
+ */
+function traduzirErroTitulo(error: { code?: string; message: string }): Error {
+  if (error.code === "23503") {
+    return new Error(
+      "O cedente ou sacado selecionado não existe mais. Atualize a página e selecione novamente.",
+    );
+  }
+  if (error.code === "23514") {
+    return new Error(
+      "Algum dado do título é inválido (verifique tipo, status e valor de face).",
+    );
+  }
+  return error instanceof Error ? error : new Error(error.message);
+}
+
+/**
+ * Hook unificado para CRUD de títulos.
+ * - Modo mock: estado local (mesma semântica anterior).
+ * - Modo Supabase: TanStack Query + supabase.from("titulos"). Os nomes de
+ *   cedente/sacado são resolvidos por lookup contra useClientes/useSacados.
+ *
+ * ATENÇÃO: a flag `titulos` em dataSource.ts controla SOMENTE os consumidores
+ * que passam por este hook — hoje a página Titulos (lista + TituloForm).
+ * Cobrancas, OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento
+ * ainda leem `mockTitulos` direto e NÃO são afetados pela flag; cada um migra
+ * quando suas entidades (operacoes/cobrancas/relatorios/documentos) forem
+ * ligadas. Decisão consciente da sub-tarefa 2.3 (espelha a 2.2).
+ */
 export function useTitulos() {
   const enabled = isSupabaseEnabled("titulos");
   const queryClient = useQueryClient();
@@ -45,12 +80,15 @@ export function useTitulos() {
 
   const createMutation = useMutation({
     mutationFn: async (input: Partial<Titulo>): Promise<Titulo> => {
+      // Registra quem cadastrou (auditoria). created_by é nullable; sem sessão,
+      // segue como null em vez de bloquear o insert.
+      const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("titulos")
-        .insert([tituloToRow(input)])
+        .insert([{ ...tituloToRow(input), created_by: userData.user?.id ?? null }])
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throw traduzirErroTitulo(error);
       return rowToTitulo(data, lookup);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
@@ -70,7 +108,7 @@ export function useTitulos() {
         .eq("id", id)
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throw traduzirErroTitulo(error);
       return rowToTitulo(data, lookup);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
