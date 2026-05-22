@@ -11,6 +11,31 @@ import { rowToSacado, sacadoToRow } from "@/lib/mappers/sacado";
 
 const QUERY_KEY = ["sacados"] as const;
 
+/**
+ * Traduz erros do Postgres/Supabase para mensagens amigáveis ao usuário.
+ * 23505 = unique_violation; o único campo único em `sacados` é o documento
+ * (CPF ou CNPJ, guardados na mesma coluna). Sempre retorna uma instância de
+ * Error para o toast da página exibir a mensagem.
+ */
+function traduzirErroSacado(error: { code?: string; message: string }): Error {
+  if (error.code === "23505") {
+    return new Error("Já existe um sacado cadastrado com este CPF/CNPJ.");
+  }
+  return error instanceof Error ? error : new Error(error.message);
+}
+
+/**
+ * Hook unificado para CRUD de sacados.
+ * - Modo mock: estado local (mesma semântica anterior).
+ * - Modo Supabase: TanStack Query + supabase.from("sacados").
+ *
+ * ATENÇÃO: a flag `sacados` em dataSource.ts controla SOMENTE os consumidores
+ * que passam por este hook — hoje a página Sacados e o filtro de sacado em
+ * Titulos. TituloForm, Relatorios e preencherDocumento ainda importam
+ * `mockSacados` direto e NÃO são afetados pela flag; cada um migra quando suas
+ * entidades (titulos/relatorios/documentos) forem ligadas. Decisão consciente
+ * da sub-tarefa 2.2 (espelha a 2.1).
+ */
 export function useSacados() {
   const enabled = isSupabaseEnabled("sacados");
   const queryClient = useQueryClient();
@@ -31,12 +56,15 @@ export function useSacados() {
 
   const createMutation = useMutation({
     mutationFn: async (input: Partial<Sacado>): Promise<Sacado> => {
+      // Registra quem cadastrou (auditoria). created_by é nullable; sem sessão,
+      // segue como null em vez de bloquear o insert.
+      const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("sacados")
-        .insert([sacadoToRow(input)])
+        .insert([{ ...sacadoToRow(input), created_by: userData.user?.id ?? null }])
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throw traduzirErroSacado(error);
       return rowToSacado(data);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
@@ -56,7 +84,7 @@ export function useSacados() {
         .eq("id", id)
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throw traduzirErroSacado(error);
       return rowToSacado(data);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
