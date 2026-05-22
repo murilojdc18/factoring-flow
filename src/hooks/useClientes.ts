@@ -12,9 +12,28 @@ import { clienteToRow, rowToCliente } from "@/lib/mappers/cliente";
 const QUERY_KEY = ["clientes"] as const;
 
 /**
+ * Traduz erros do Postgres/Supabase para mensagens amigáveis ao usuário.
+ * 23505 = unique_violation; o único campo único em `clientes` é o CNPJ.
+ * Sempre retorna uma instância de Error para o toast da página exibir a mensagem.
+ */
+function traduzirErroCliente(error: { code?: string; message: string }): Error {
+  if (error.code === "23505") {
+    return new Error("Já existe um cliente cadastrado com este CNPJ.");
+  }
+  return error instanceof Error ? error : new Error(error.message);
+}
+
+/**
  * Hook unificado para CRUD de clientes.
  * - Modo mock: estado local (mesma semântica anterior).
  * - Modo Supabase: TanStack Query + supabase.from("clientes").
+ *
+ * ATENÇÃO: a flag `clientes` em dataSource.ts controla SOMENTE os consumidores
+ * que passam por este hook — hoje a página Clientes e o lookup de cedente em
+ * Titulos. OperacaoSimulador, Relatorios, OperacaoDetalhes, TituloForm e
+ * preencherDocumento ainda importam `mockClientes` direto e NÃO são afetados
+ * pela flag; cada um migra quando suas entidades (titulos/operacoes) forem
+ * ligadas. Decisão consciente da sub-tarefa 2.1.
  */
 export function useClientes() {
   const enabled = isSupabaseEnabled("clientes");
@@ -37,12 +56,15 @@ export function useClientes() {
 
   const createMutation = useMutation({
     mutationFn: async (input: Partial<Cliente>): Promise<Cliente> => {
+      // Registra quem cadastrou (auditoria). created_by é nullable; sem sessão,
+      // segue como null em vez de bloquear o insert.
+      const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("clientes")
-        .insert([clienteToRow(input)])
+        .insert([{ ...clienteToRow(input), created_by: userData.user?.id ?? null }])
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throw traduzirErroCliente(error);
       return rowToCliente(data);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
@@ -62,7 +84,7 @@ export function useClientes() {
         .eq("id", id)
         .select("*")
         .single();
-      if (error) throw error;
+      if (error) throw traduzirErroCliente(error);
       return rowToCliente(data);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
