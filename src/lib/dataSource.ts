@@ -19,7 +19,12 @@ export const USE_SUPABASE = {
   // preencherDocumento leem `mockClientes` direto e NÃO mudam com esta flag —
   // cada um migra quando titulos/operacoes forem ligadas (decisão da 2.1).
   clientes: true,
-  sacados: false,
+  // Ligar `sacados` ativa o Supabase APENAS nos consumidores que passam pelo
+  // hook useSacados (página Sacados e filtro de sacado em Titulos). TituloForm,
+  // Relatorios e preencherDocumento leem `mockSacados` direto e NÃO mudam com
+  // esta flag — cada um migra quando titulos/relatorios/documentos forem
+  // ligados (decisão da 2.2).
+  sacados: true,
   titulos: false,
   operacoes: false,
   contratos: false,
