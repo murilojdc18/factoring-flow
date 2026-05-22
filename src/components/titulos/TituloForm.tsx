@@ -22,8 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { mockClientes } from "@/data/mockClientes";
-import { mockSacados } from "@/data/mockSacados";
+import { useClientes } from "@/hooks/useClientes";
+import { useSacados } from "@/hooks/useSacados";
 import {
   STATUS_TITULO,
   TIPOS_TITULO,
@@ -138,6 +138,11 @@ interface Props {
 
 export function TituloForm({ initial, onSubmit, onCancel }: Props) {
   const [data, setData] = useState<TituloFormData>(EMPTY);
+  // Cedentes e sacados agora vêm dos hooks de domínio (mock ou Supabase,
+  // conforme a feature flag em dataSource.ts). Antes este form lia
+  // mockClientes/mockSacados direto, ignorando a flag.
+  const { clientes, isLoading: loadingClientes } = useClientes();
+  const { sacados, isLoading: loadingSacados } = useSacados();
 
   useEffect(() => {
     if (initial) {
@@ -152,7 +157,7 @@ export function TituloForm({ initial, onSubmit, onCancel }: Props) {
     setData((d) => ({ ...d, [key]: value }));
 
   function selecionarCedente(id: string) {
-    const c = mockClientes.find((x) => x.id === id);
+    const c = clientes.find((x) => x.id === id);
     setData((d) => ({
       ...d,
       cedenteId: id,
@@ -161,7 +166,7 @@ export function TituloForm({ initial, onSubmit, onCancel }: Props) {
   }
 
   function selecionarSacado(id: string) {
-    const s = mockSacados.find((x) => x.id === id);
+    const s = sacados.find((x) => x.id === id);
     setData((d) => ({
       ...d,
       sacadoId: id,
@@ -241,12 +246,24 @@ export function TituloForm({ initial, onSubmit, onCancel }: Props) {
 
       <Section title="Partes envolvidas">
         <Field label="Cedente" className="lg:col-span-2">
-          <Select value={data.cedenteId} onValueChange={selecionarCedente}>
+          <Select
+            value={data.cedenteId}
+            onValueChange={selecionarCedente}
+            disabled={loadingClientes || clientes.length === 0}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o cedente" />
+              <SelectValue
+                placeholder={
+                  loadingClientes
+                    ? "Carregando..."
+                    : clientes.length === 0
+                      ? "Nenhum cedente cadastrado"
+                      : "Selecione o cedente"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {mockClientes.map((c) => (
+              {clientes.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.razaoSocial}
                 </SelectItem>
@@ -255,12 +272,24 @@ export function TituloForm({ initial, onSubmit, onCancel }: Props) {
           </Select>
         </Field>
         <Field label="Sacado">
-          <Select value={data.sacadoId} onValueChange={selecionarSacado}>
+          <Select
+            value={data.sacadoId}
+            onValueChange={selecionarSacado}
+            disabled={loadingSacados || sacados.length === 0}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o sacado" />
+              <SelectValue
+                placeholder={
+                  loadingSacados
+                    ? "Carregando..."
+                    : sacados.length === 0
+                      ? "Nenhum sacado cadastrado"
+                      : "Selecione o sacado"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {mockSacados.map((s) => (
+              {sacados.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.nome}
                 </SelectItem>
