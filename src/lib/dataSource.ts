@@ -13,7 +13,12 @@
  */
 export const USE_SUPABASE = {
   configuracoes: false,
-  clientes: false,
+  // Ligar `clientes` ativa o Supabase APENAS nos consumidores que passam pelo
+  // hook useClientes (página Clientes e lookup de cedente em Titulos).
+  // OperacaoSimulador, Relatorios, OperacaoDetalhes, TituloForm e
+  // preencherDocumento leem `mockClientes` direto e NÃO mudam com esta flag —
+  // cada um migra quando titulos/operacoes forem ligadas (decisão da 2.1).
+  clientes: true,
   sacados: false,
   titulos: false,
   operacoes: false,
