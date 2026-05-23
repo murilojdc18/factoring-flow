@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -41,16 +41,19 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { mockClientes } from "@/data/mockClientes";
-import { mockTitulos } from "@/data/mockTitulos";
+import { useClientes } from "@/hooks/useClientes";
+import { useTitulos } from "@/hooks/useTitulos";
 import { formatBRL } from "@/lib/format";
-import { formatBR, daysUntil } from "@/lib/dateUtils";
+import { formatBR, daysUntil, dateToISO } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 import {
   PARAMETROS_DEFAULT,
   SimuladorParametros,
   calcularSimulacao,
 } from "@/lib/simuladorCalc";
+import { useOperacoes } from "@/hooks/useOperacoes";
+import { operacaoToRow } from "@/lib/mappers/operacao";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 export default function OperacaoSimulador() {
@@ -60,20 +63,31 @@ export default function OperacaoSimulador() {
   const [observacoes, setObservacoes] = useState("");
   const [dataBase, setDataBase] = useState<Date>(new Date());
 
+  // Cedentes e títulos agora vêm dos hooks de domínio (mock ou Supabase,
+  // conforme as flags clientes/titulos em dataSource.ts).
+  const { clientes, isLoading: loadingClientes } = useClientes();
+  const { titulos, isLoading: loadingTitulos } = useTitulos();
+  const { create } = useOperacoes();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Lista de cedentes ativos para o dropdown. Vem do hook (banco quando flag clientes:true).
   const cedentesElegiveis = useMemo(
-    () => mockClientes.filter((c) => c.status === "Ativo"),
-    [],
+    () => clientes.filter((c) => c.status === "Ativo"),
+    [clientes],
   );
 
+  // Lista de títulos disponíveis do cedente selecionado. Vem do hook (banco quando flag titulos:true).
   const titulosDoCliente = useMemo(() => {
     if (!cedenteId) return [];
-    return mockTitulos.filter(
+    return titulos.filter(
       (t) =>
         t.cedenteId === cedenteId &&
         t.status === "Disponível" &&
         daysUntil(t.dataVencimento, dataBase) >= 0,
     );
-  }, [cedenteId, dataBase]);
+  }, [cedenteId, dataBase, titulos]);
 
   const titulosSelecionados = useMemo(
     () => titulosDoCliente.filter((t) => selecionados.has(t.id)),
@@ -113,9 +127,9 @@ export default function OperacaoSimulador() {
     setParams((p) => ({ ...p, [k]: isNaN(num) ? 0 : Math.max(0, num) }));
   };
 
-  const gerarOperacao = () => {
-    if (titulosSelecionados.length === 0) {
-      toast.error("Selecione ao menos um título.");
+  const gerarOperacao = async () => {
+    if (!cedenteId || titulosSelecionados.length === 0) {
+      toast.error("Selecione um cedente e ao menos um título.");
       return;
     }
     // Regra D: defesa simétrica ao botão desabilitado.
@@ -123,9 +137,45 @@ export default function OperacaoSimulador() {
       toast.error("Líquido negativo — revise os parâmetros antes de gerar.");
       return;
     }
-    toast.success("Operação simulada gerada (proforma).", {
-      description: `${resultado.quantidadeTitulos} título(s) — Líquido estimado ${formatBRL(resultado.valorLiquido)}`,
-    });
+
+    setIsCreating(true);
+    try {
+      // numero gerado no front. Feio mas estável: ano + timestamp em ms evita
+      // colidir com o UNIQUE de operacoes sem precisar de sequence no banco.
+      const numero = `BOR-${new Date().getFullYear()}-${Date.now()}`;
+      // Envia o resultado JÁ calculado (o cálculo é fonte única do front).
+      // prazoMedio é arredondado: a coluna prazo_medio é integer e a RPC faz
+      // cast ::integer (que rejeitaria um valor fracionário).
+      const payload = {
+        ...operacaoToRow({
+          numero,
+          cedenteId,
+          dataOperacao: dateToISO(dataBase),
+          quantidadeTitulos: resultado.quantidadeTitulos,
+          valorBruto: resultado.valorBruto,
+          valorDesagio: resultado.valorDesagio,
+          valorTarifas: resultado.valorTarifas,
+          valorRetencao: resultado.valorRetencao,
+          valorLiquido: resultado.valorLiquido,
+          prazoMedio: Math.round(resultado.prazoMedioPonderado),
+          taxaAplicada: params.taxaFatorMensal,
+          responsavelInterno: user?.email ?? "",
+          observacoes,
+        }),
+        titulo_ids: titulosSelecionados.map((t) => t.id),
+      };
+
+      const operacaoId = await create(payload);
+      toast.success("Operação criada com sucesso.", {
+        description: `${resultado.quantidadeTitulos} título(s) — Líquido ${formatBRL(resultado.valorLiquido)}`,
+      });
+      navigate(`/operacoes/${operacaoId}`);
+    } catch (err) {
+      // Mensagem já traduzida por traduzirErroOperacao no hook.
+      toast.error(err instanceof Error ? err.message : "Erro ao criar operação.");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const cedenteSelecionado = cedentesElegiveis.find((c) => c.id === cedenteId);
@@ -172,9 +222,21 @@ export default function OperacaoSimulador() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Select value={cedenteId} onValueChange={handleCedenteChange}>
+              <Select
+                value={cedenteId}
+                onValueChange={handleCedenteChange}
+                disabled={loadingClientes || cedentesElegiveis.length === 0}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cedente..." />
+                  <SelectValue
+                    placeholder={
+                      loadingClientes
+                        ? "Carregando..."
+                        : cedentesElegiveis.length === 0
+                          ? "Nenhum cliente ativo cadastrado"
+                          : "Selecione o cedente..."
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {cedentesElegiveis.map((c) => (
@@ -223,12 +285,17 @@ export default function OperacaoSimulador() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {cedenteId && titulosDoCliente.length === 0 && (
+              {cedenteId && loadingTitulos && (
+                <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  Carregando títulos...
+                </p>
+              )}
+              {cedenteId && !loadingTitulos && titulosDoCliente.length === 0 && (
                 <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                   Nenhum título disponível para este cedente nesta data-base.
                 </p>
               )}
-              {titulosDoCliente.length > 0 && (
+              {!loadingTitulos && titulosDoCliente.length > 0 && (
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -463,12 +530,15 @@ export default function OperacaoSimulador() {
                 size="lg"
                 onClick={gerarOperacao}
                 disabled={
-                  resultado.quantidadeTitulos === 0 ||
-                  resultado.liquidoInvalido
+                  !cedenteId ||
+                  selecionados.size === 0 ||
+                  !resultado ||
+                  resultado.liquidoInvalido ||
+                  isCreating
                 }
               >
                 <FileCheck2 className="mr-2 h-4 w-4" />
-                Gerar operação a partir da simulação
+                {isCreating ? "Gerando..." : "Gerar operação a partir da simulação"}
               </Button>
             </CardContent>
           </Card>
