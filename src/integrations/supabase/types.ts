@@ -843,6 +843,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      criar_operacao: {
+        Args: { payload: Json }
+        Returns: string
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
