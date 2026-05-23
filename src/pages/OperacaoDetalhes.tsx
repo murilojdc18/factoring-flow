@@ -35,8 +35,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { useOperacoes } from "@/hooks/useOperacoes";
-import { mockClientes } from "@/data/mockClientes";
-import { mockTitulos } from "@/data/mockTitulos";
+import { useClientes } from "@/hooks/useClientes";
+import { useTitulos } from "@/hooks/useTitulos";
 import { mockModelosContrato } from "@/data/mockContratos";
 import { OperacaoStatusBadge } from "@/components/operacoes/StatusBadge";
 import { formatBRL } from "@/lib/format";
@@ -79,19 +79,36 @@ export default function OperacaoDetalhes() {
     { data: string; texto: string }[]
   >([]);
 
-  const { operacoes, isLoading, error } = useOperacoes();
+  const { operacoes, isLoading: isLoadingOperacoes, error: errorOperacoes } =
+    useOperacoes();
+  const { clientes, isLoading: isLoadingClientes, error: errorClientes } =
+    useClientes();
+  const {
+    titulos: todosTitulos,
+    isLoading: isLoadingTitulos,
+    error: errorTitulos,
+  } = useTitulos();
+
   const operacao = useMemo(
     () => operacoes.find((o) => o.id === id),
     [operacoes, id],
   );
   const cedente = useMemo(
-    () => mockClientes.find((c) => c.id === operacao?.cedenteId),
-    [operacao],
+    () => clientes.find((c) => c.id === operacao?.cedenteId),
+    [clientes, operacao],
   );
   const titulos = useMemo(
-    () => mockTitulos.filter((t) => operacao?.titulosIds.includes(t.id)),
-    [operacao],
+    () => todosTitulos.filter((t) => operacao?.titulosIds.includes(t.id)),
+    [todosTitulos, operacao],
   );
+
+  // Qualquer uma das três queries carregando mantém o LoadingState, para não
+  // piscar "Cedente não encontrado"/"0 títulos" antes dos lookups ficarem prontos.
+  const isLoading = isLoadingOperacoes || isLoadingClientes || isLoadingTitulos;
+  // Falha em clientes/títulos bloqueia a tela: num sistema financeiro é melhor
+  // um erro explícito que um dado enganoso (ex.: "0 títulos" numa operação que
+  // de fato tem títulos).
+  const error = errorOperacoes ?? errorClientes ?? errorTitulos;
 
   if (isLoading) {
     return (
