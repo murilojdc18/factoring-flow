@@ -39,7 +39,15 @@ export const USE_SUPABASE = {
   // (relatorios/documentos/compliance) for ligada. A criação de operação
   // (escrita atômica via RPC) é a sub-tarefa 2.4b. Decisão da 2.4a.
   operacoes: true,
-  contratos: false,
+  // Ligar `modelos_documentos` ativa o Supabase APENAS nos consumidores que
+  // passam pelo hook useModelosDocumento (página Contratos: leitura dos modelos;
+  // e GerarDocumentoDialog). A escrita de modelos pela UI segue desativada
+  // (decisão D5 da 2.5). Decisão da 2.5a.
+  modelos_documentos: false,
+  // Ligar `documentos` ativa o Supabase APENAS nos consumidores que passam pelo
+  // hook useDocumentosGerados (Contratos, Relatorios, OperacaoDetalhes), que
+  // substitui o documentosStore em memória. Decisão da 2.5b.
+  documentos: false,
   cobrancas: false,
   compliance: false,
 } as const;
