@@ -31,7 +31,14 @@ export const USE_SUPABASE = {
   // `mockTitulos` direto e NÃO mudam com esta flag — cada um migra quando
   // operacoes/cobrancas/relatorios/documentos forem ligados (decisão da 2.3).
   titulos: true,
-  operacoes: false,
+  // Ligar `operacoes` ativa o Supabase APENAS nos consumidores que passam pelo
+  // hook useOperacoes (página Operacoes: lista + KPIs; e OperacaoDetalhes:
+  // leitura da operação/títulos/histórico). Relatorios,
+  // GerarDocumentoDialog/preencherDocumento e Compliance leem `mockOperacoes`
+  // direto e NÃO mudam com esta flag — cada um migra quando sua entidade
+  // (relatorios/documentos/compliance) for ligada. A criação de operação
+  // (escrita atômica via RPC) é a sub-tarefa 2.4b. Decisão da 2.4a.
+  operacoes: true,
   contratos: false,
   cobrancas: false,
   compliance: false,

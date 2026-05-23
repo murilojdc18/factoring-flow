@@ -32,7 +32,9 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { EmptyState } from "@/components/ui/empty-state";
-import { mockOperacoes } from "@/data/mockOperacoes";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { useOperacoes } from "@/hooks/useOperacoes";
 import { mockClientes } from "@/data/mockClientes";
 import { mockTitulos } from "@/data/mockTitulos";
 import { mockModelosContrato } from "@/data/mockContratos";
@@ -77,7 +79,11 @@ export default function OperacaoDetalhes() {
     { data: string; texto: string }[]
   >([]);
 
-  const operacao = useMemo(() => mockOperacoes.find((o) => o.id === id), [id]);
+  const { operacoes, isLoading, error } = useOperacoes();
+  const operacao = useMemo(
+    () => operacoes.find((o) => o.id === id),
+    [operacoes, id],
+  );
   const cedente = useMemo(
     () => mockClientes.find((c) => c.id === operacao?.cedenteId),
     [operacao],
@@ -86,6 +92,29 @@ export default function OperacaoDetalhes() {
     () => mockTitulos.filter((t) => operacao?.titulosIds.includes(t.id)),
     [operacao],
   );
+
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="Operação" />
+        <LoadingState label="Carregando operação..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Operação" />
+        <ErrorState
+          title="Não foi possível carregar"
+          description={
+            error instanceof Error ? error.message : "Erro inesperado."
+          }
+        />
+      </div>
+    );
+  }
 
   if (!operacao) {
     return (

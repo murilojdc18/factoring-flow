@@ -22,19 +22,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockOperacoes, STATUS_OPERACAO } from "@/data/mockOperacoes";
+import { STATUS_OPERACAO } from "@/data/mockOperacoes";
 import { OperacaoStatusBadge } from "@/components/operacoes/StatusBadge";
+import { useOperacoes } from "@/hooks/useOperacoes";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
 
 export default function Operacoes() {
   const navigate = useNavigate();
+  const { operacoes, isLoading, error } = useOperacoes();
   const [busca, setBusca] = useState("");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
 
   const filtradas = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return mockOperacoes.filter((op) => {
+    return operacoes.filter((op) => {
       const okBusca =
         !q ||
         op.numero.toLowerCase().includes(q) ||
@@ -42,18 +46,18 @@ export default function Operacoes() {
       const okStatus = statusFiltro === "todos" || op.status === statusFiltro;
       return okBusca && okStatus;
     });
-  }, [busca, statusFiltro]);
+  }, [operacoes, busca, statusFiltro]);
 
   const totais = useMemo(() => {
     return {
-      qtd: mockOperacoes.length,
-      bruto: mockOperacoes.reduce((a, o) => a + o.valorBruto, 0),
-      liquido: mockOperacoes.reduce((a, o) => a + o.valorLiquido, 0),
-      ativas: mockOperacoes.filter((o) =>
+      qtd: operacoes.length,
+      bruto: operacoes.reduce((a, o) => a + o.valorBruto, 0),
+      liquido: operacoes.reduce((a, o) => a + o.valorLiquido, 0),
+      ativas: operacoes.filter((o) =>
         ["Aprovada", "Formalizada", "Em atraso"].includes(o.status),
       ).length,
     };
-  }, []);
+  }, [operacoes]);
 
   return (
     <div>
@@ -120,7 +124,26 @@ export default function Operacoes() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtradas.length === 0 && (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="p-0">
+                    <LoadingState label="Carregando operações..." />
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="p-0">
+                    <ErrorState
+                      title="Não foi possível carregar"
+                      description={
+                        error instanceof Error
+                          ? error.message
+                          : "Erro inesperado."
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : filtradas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="p-0">
                     <EmptyState
@@ -131,8 +154,8 @@ export default function Operacoes() {
                     />
                   </TableCell>
                 </TableRow>
-              )}
-              {filtradas.map((op) => (
+              ) : (
+                filtradas.map((op) => (
                 <TableRow
                   key={op.id}
                   className="cursor-pointer"
@@ -151,7 +174,7 @@ export default function Operacoes() {
                     </Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              )))}
             </TableBody>
           </Table>
         </CardContent>
