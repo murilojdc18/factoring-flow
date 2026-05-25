@@ -314,8 +314,12 @@ export type Database = {
           id: string
           modelo_id: string | null
           modelo_nome: string
+          modelo_versao: number
+          observacoes: string
           operacao_id: string | null
+          operacao_numero: string
           status: Database["public"]["Enums"]["documento_gerado_status"]
+          tipo_documento: string
           updated_at: string
           variaveis_preenchidas: Json
         }
@@ -327,8 +331,12 @@ export type Database = {
           id?: string
           modelo_id?: string | null
           modelo_nome?: string
+          modelo_versao?: number
+          observacoes?: string
           operacao_id?: string | null
+          operacao_numero?: string
           status?: Database["public"]["Enums"]["documento_gerado_status"]
+          tipo_documento?: string
           updated_at?: string
           variaveis_preenchidas?: Json
         }
@@ -340,8 +348,12 @@ export type Database = {
           id?: string
           modelo_id?: string | null
           modelo_nome?: string
+          modelo_versao?: number
+          observacoes?: string
           operacao_id?: string | null
+          operacao_numero?: string
           status?: Database["public"]["Enums"]["documento_gerado_status"]
+          tipo_documento?: string
           updated_at?: string
           variaveis_preenchidas?: Json
         }
