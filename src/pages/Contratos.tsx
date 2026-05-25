@@ -1,12 +1,7 @@
 import { useMemo, useState } from "react";
 import {
-  Copy,
   Eye,
   FileText,
-  Pencil,
-  Plus,
-  Power,
-  PowerOff,
   Search,
   Sparkles,
   Code2,
@@ -45,11 +40,12 @@ import {
   ModeloContrato,
   STATUS_CONTRATO,
   TIPOS_CONTRATO,
-  mockModelosContrato,
 } from "@/data/mockContratos";
 import { ContratoStatusBadge } from "@/components/contratos/StatusBadge";
 import { PreviewTexto } from "@/components/contratos/PreviewTexto";
-import { ModeloForm } from "@/components/contratos/ModeloForm";
+import { useModelosDocumento } from "@/hooks/useModelosDocumento";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { aplicarMockNoTexto } from "@/lib/contratoPreview";
 import { formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
@@ -62,27 +58,29 @@ import {
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
 import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { exportarDocumentoPdf } from "@/lib/exportarPdf";
-import { documentosStore, useDocumentos } from "@/lib/documentosStore";
+import { useDocumentosGerados } from "@/hooks/useDocumentosGerados";
 
 type ModalState =
   | { tipo: "fechado" }
-  | { tipo: "criar" }
-  | { tipo: "editar"; modelo: ModeloContrato }
   | { tipo: "preview"; modelo: ModeloContrato };
 
 export default function Contratos() {
-  const [modelos, setModelos] = useState<ModeloContrato[]>(mockModelosContrato);
+  const { modelos, isLoading, error } = useModelosDocumento();
   const [busca, setBusca] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [modal, setModal] = useState<ModalState>({ tipo: "fechado" });
   const [previewComMock, setPreviewComMock] = useState(false);
-  const documentos = useDocumentos();
+  const {
+    documentos,
+    isLoading: isLoadingDocs,
+    error: errorDocs,
+    updateStatus,
+  } = useDocumentosGerados();
   const [gerarOpen, setGerarOpen] = useState(false);
   const [docPreview, setDocPreview] = useState<DocumentoGerado | null>(null);
 
   const handleSalvarDocumento = (doc: DocumentoGerado) => {
-    documentosStore.add(doc);
     setGerarOpen(false);
     toast.success("Documento gerado salvo.", {
       description: `${doc.modeloNome} • Operação ${doc.operacaoNumero}`,
@@ -98,37 +96,6 @@ export default function Contratos() {
       return okBusca && okTipo && okStatus;
     });
   }, [modelos, busca, tipoFiltro, statusFiltro]);
-
-  const handleSalvar = (m: ModeloContrato) => {
-    setModelos((prev) => {
-      const existe = prev.find((p) => p.id === m.id);
-      if (existe) return prev.map((p) => (p.id === m.id ? m : p));
-      return [m, ...prev];
-    });
-    toast.success(`Modelo "${m.nome}" salvo.`);
-    setModal({ tipo: "fechado" });
-  };
-
-  const handleDuplicar = (m: ModeloContrato) => {
-    const copia: ModeloContrato = {
-      ...m,
-      id: `MOD-${Math.floor(Math.random() * 9000 + 1000)}`,
-      nome: `${m.nome} (cópia)`,
-      versao: "1.0",
-      status: "Rascunho",
-      atualizadoEm: new Date().toISOString().slice(0, 10),
-    };
-    setModelos((prev) => [copia, ...prev]);
-    toast.success("Modelo duplicado como rascunho.");
-  };
-
-  const handleToggleStatus = (m: ModeloContrato) => {
-    const novo = m.status === "Ativo" ? "Inativo" : "Ativo";
-    setModelos((prev) =>
-      prev.map((p) => (p.id === m.id ? { ...p, status: novo } : p)),
-    );
-    toast.success(`Modelo ${novo === "Ativo" ? "ativado" : "inativado"}.`);
-  };
 
   const totais = {
     total: modelos.length,
@@ -146,12 +113,6 @@ export default function Contratos() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setGerarOpen(true)}>
               <FileSignature className="mr-2 h-4 w-4" /> Gerar documento
-            </Button>
-            <Button
-              onClick={() => setModal({ tipo: "criar" })}
-              className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Novo modelo
             </Button>
           </div>
         }
@@ -236,48 +197,52 @@ export default function Contratos() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtrados.length === 0 && (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-0">
+                    <LoadingState label="Carregando modelos..." />
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-0">
+                    <ErrorState
+                      title="Não foi possível carregar"
+                      description={
+                        error instanceof Error ? error.message : "Erro inesperado."
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : filtrados.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="p-0">
                     <EmptyState
                       variant="inline"
                       icon={FileSignature}
                       title="Nenhum modelo encontrado"
-                      description="Crie um novo modelo de contrato ou ajuste a busca."
+                      description="Ajuste a busca ou os filtros para ver mais modelos."
                     />
                   </TableCell>
                 </TableRow>
+              ) : (
+                filtrados.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell className="font-medium">{m.nome}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{m.tipo}</TableCell>
+                    <TableCell className="text-center font-mono text-xs">v{m.versao}</TableCell>
+                    <TableCell className="text-sm">{formatBR(m.atualizadoEm)}</TableCell>
+                    <TableCell><ContratoStatusBadge status={m.status} /></TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" title="Visualizar" onClick={() => setModal({ tipo: "preview", modelo: m })}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-              {filtrados.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.nome}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{m.tipo}</TableCell>
-                  <TableCell className="text-center font-mono text-xs">v{m.versao}</TableCell>
-                  <TableCell className="text-sm">{formatBR(m.atualizadoEm)}</TableCell>
-                  <TableCell><ContratoStatusBadge status={m.status} /></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" title="Visualizar" onClick={() => setModal({ tipo: "preview", modelo: m })}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" title="Editar" onClick={() => setModal({ tipo: "editar", modelo: m })}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" title="Duplicar" onClick={() => handleDuplicar(m)}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title={m.status === "Ativo" ? "Inativar" : "Ativar"}
-                        onClick={() => handleToggleStatus(m)}
-                      >
-                        {m.status === "Ativo" ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -300,7 +265,26 @@ export default function Contratos() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {documentos.length === 0 && (
+                  {isLoadingDocs ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="p-0">
+                        <LoadingState label="Carregando documentos..." />
+                      </TableCell>
+                    </TableRow>
+                  ) : errorDocs ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="p-0">
+                        <ErrorState
+                          title="Não foi possível carregar"
+                          description={
+                            errorDocs instanceof Error
+                              ? errorDocs.message
+                              : "Erro inesperado."
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ) : documentos.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="p-0">
                         <EmptyState
@@ -313,8 +297,8 @@ export default function Contratos() {
                         />
                       </TableCell>
                     </TableRow>
-                  )}
-                  {documentos.map((d) => (
+                  ) : (
+                    documentos.map((d) => (
                     <TableRow key={d.id}>
                       <TableCell className="font-mono text-xs">{d.id}</TableCell>
                       <TableCell className="text-sm">
@@ -329,7 +313,7 @@ export default function Contratos() {
                           value={d.status}
                           onValueChange={(v) => {
                             const novoStatus = v as DocumentoGerado["status"];
-                            documentosStore.update(d.id, { status: novoStatus });
+                            updateStatus(d.id, novoStatus);
                             // TODO(n8n): Integração externa será implementada futuramente
                             // via Edge Function segura (evento `documento_aprovado_internamente`).
                             // Nesta fase, a aprovação interna é apenas local — não dispara webhook,
@@ -364,37 +348,14 @@ export default function Contratos() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Modal criar/editar */}
-      <Dialog
-        open={modal.tipo === "criar" || modal.tipo === "editar"}
-        onOpenChange={(o) => !o && setModal({ tipo: "fechado" })}
-      >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {modal.tipo === "editar" ? "Editar modelo" : "Novo modelo"}
-            </DialogTitle>
-            <DialogDescription>
-              Use placeholders entre chaves duplas para campos dinâmicos.
-            </DialogDescription>
-          </DialogHeader>
-          {(modal.tipo === "criar" || modal.tipo === "editar") && (
-            <ModeloForm
-              modelo={modal.tipo === "editar" ? modal.modelo : undefined}
-              onCancel={() => setModal({ tipo: "fechado" })}
-              onSubmit={handleSalvar}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Modal preview */}
       <Dialog
@@ -465,7 +426,6 @@ export default function Contratos() {
       <GerarDocumentoDialog
         open={gerarOpen}
         onOpenChange={setGerarOpen}
-        modelos={modelos}
         onSalvar={handleSalvarDocumento}
       />
 

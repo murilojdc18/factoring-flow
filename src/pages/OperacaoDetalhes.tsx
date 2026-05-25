@@ -37,14 +37,12 @@ import { ErrorState } from "@/components/ui/error-state";
 import { useOperacoes } from "@/hooks/useOperacoes";
 import { useClientes } from "@/hooks/useClientes";
 import { useTitulos } from "@/hooks/useTitulos";
-import { mockModelosContrato } from "@/data/mockContratos";
 import { OperacaoStatusBadge } from "@/components/operacoes/StatusBadge";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
 import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { toast } from "sonner";
 import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
-import { documentosStore } from "@/lib/documentosStore";
 import { DocumentoGerado } from "@/data/mockDocumentosGerados";
 import { RecompraDialog } from "@/components/recompras/RecompraDialog";
 import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
@@ -152,7 +150,6 @@ export default function OperacaoDetalhes() {
     toast.success(msg, { description: desc });
 
   const handleSalvarDocumento = (doc: DocumentoGerado) => {
-    documentosStore.add(doc);
     setGerarTipo(null);
     toast.success("Documento gerado salvo.", {
       description: `${doc.modeloNome} • Operação ${doc.operacaoNumero}`,
@@ -481,7 +478,6 @@ export default function OperacaoDetalhes() {
       <GerarDocumentoDialog
         open={gerarTipo !== null}
         onOpenChange={(o) => !o && setGerarTipo(null)}
-        modelos={mockModelosContrato}
         onSalvar={handleSalvarDocumento}
         initialTipo={gerarTipo ?? undefined}
         initialOperacaoId={operacao.id}

@@ -68,7 +68,7 @@ import {
 } from "@/data/mockTitulos";
 import { mockClientes } from "@/data/mockClientes";
 import { mockSacados } from "@/data/mockSacados";
-import { useDocumentos } from "@/lib/documentosStore";
+import { useDocumentosGerados } from "@/hooks/useDocumentosGerados";
 
 import { formatBRL, formatNumber } from "@/lib/format";
 import { dateToISO, daysUntil, formatBR, parseISO } from "@/lib/dateUtils";
@@ -116,7 +116,7 @@ const CHART_COLORS = [
 /* =============================== Page =============================== */
 
 export default function Relatorios() {
-  const documentos = useDocumentos();
+  const { documentos } = useDocumentosGerados();
 
   const [filtros, setFiltros] = useState<Filtros>({
     cedenteId: "",
@@ -1073,7 +1073,7 @@ function DocumentosPeriodo({
   documentos,
   filtrosResumo,
 }: {
-  documentos: ReturnType<typeof useDocumentos>;
+  documentos: ReturnType<typeof useDocumentosGerados>["documentos"];
   filtrosResumo: string;
 }) {
   if (documentos.length === 0) return <Empty msg="Nenhum documento gerado no recorte." />;
