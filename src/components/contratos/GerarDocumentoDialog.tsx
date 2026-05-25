@@ -19,8 +19,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ModeloContrato } from "@/data/mockContratos";
-import { mockOperacoes, Operacao } from "@/data/mockOperacoes";
+import { useModelosDocumento } from "@/hooks/useModelosDocumento";
+import type { Operacao } from "@/data/mockOperacoes";
+import { useOperacoes } from "@/hooks/useOperacoes";
+import { useClientes } from "@/hooks/useClientes";
+import { useTitulos } from "@/hooks/useTitulos";
+import { useSacados } from "@/hooks/useSacados";
+import { useDocumentosGerados } from "@/hooks/useDocumentosGerados";
+import { toast } from "sonner";
 import {
   DocumentoGerado,
   DocumentoStatus,
@@ -42,7 +48,6 @@ type TipoGeravel = (typeof TIPOS_GERAVEIS)[number];
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  modelos: ModeloContrato[];
   onSalvar: (doc: DocumentoGerado) => void;
   /** Pré-seleciona o tipo de documento ao abrir. */
   initialTipo?: TipoGeravel;
@@ -53,11 +58,16 @@ interface Props {
 export function GerarDocumentoDialog({
   open,
   onOpenChange,
-  modelos,
   onSalvar,
   initialTipo,
   initialOperacaoId,
 }: Props) {
+  const { modelos, isLoading: isLoadingModelos } = useModelosDocumento();
+  const { operacoes, isLoading: isLoadingOperacoes } = useOperacoes();
+  const { clientes } = useClientes();
+  const { titulos } = useTitulos();
+  const { sacados } = useSacados();
+  const { create } = useDocumentosGerados();
   const [tipo, setTipo] = useState<TipoGeravel>(
     initialTipo ?? "Contrato de cessão de direitos creditórios",
   );
@@ -66,6 +76,7 @@ export function GerarDocumentoDialog({
   const [textoFinal, setTextoFinal] = useState<string>("");
   const [observacoes, setObservacoes] = useState<string>("");
   const [status, setStatus] = useState<DocumentoStatus>("Rascunho");
+  const [isCreating, setIsCreating] = useState(false);
 
   // Modelos ativos do tipo selecionado
   const modelosDoTipo = useMemo(
@@ -74,7 +85,7 @@ export function GerarDocumentoDialog({
   );
 
   const modeloSelecionado = modelos.find((m) => m.id === modeloId);
-  const operacaoSelecionada: Operacao | undefined = mockOperacoes.find(
+  const operacaoSelecionada: Operacao | undefined = operacoes.find(
     (o) => o.id === operacaoId,
   );
 
@@ -101,29 +112,45 @@ export function GerarDocumentoDialog({
 
   const handleGerarPreview = () => {
     if (!modeloSelecionado || !operacaoSelecionada) return;
-    const valores = montarPlaceholders(operacaoSelecionada);
+    const cedente = clientes.find((c) => c.id === operacaoSelecionada.cedenteId);
+    const titulosDaOperacao = titulos.filter((t) =>
+      operacaoSelecionada.titulosIds.includes(t.id),
+    );
+    const valores = montarPlaceholders(
+      operacaoSelecionada,
+      cedente,
+      titulosDaOperacao,
+      sacados,
+    );
     const texto = preencherTexto(modeloSelecionado.texto, valores);
     setTextoFinal(texto);
   };
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!modeloSelecionado || !operacaoSelecionada || !textoFinal) return;
-    const doc: DocumentoGerado = {
-      id: `DOC-${Date.now()}`,
-      tipoDocumento: modeloSelecionado.tipo,
-      modeloId: modeloSelecionado.id,
-      modeloNome: modeloSelecionado.nome,
-      modeloVersao: modeloSelecionado.versao,
-      operacaoId: operacaoSelecionada.id,
-      operacaoNumero: operacaoSelecionada.numero,
-      cedenteId: operacaoSelecionada.cedenteId,
-      cedenteNome: operacaoSelecionada.cedenteNome,
-      geradoEm: new Date().toISOString().slice(0, 10),
-      status,
-      textoFinal,
-      observacoes,
-    };
-    onSalvar(doc);
+    setIsCreating(true);
+    try {
+      const doc = await create({
+        tipoDocumento: modeloSelecionado.tipo,
+        modeloId: modeloSelecionado.id,
+        modeloNome: modeloSelecionado.nome,
+        modeloVersao: modeloSelecionado.versao,
+        operacaoId: operacaoSelecionada.id,
+        operacaoNumero: operacaoSelecionada.numero,
+        cedenteId: operacaoSelecionada.cedenteId,
+        cedenteNome: operacaoSelecionada.cedenteNome,
+        status,
+        textoFinal,
+        observacoes,
+      });
+      onSalvar(doc);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível salvar o documento.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const podeGerarPreview = !!modeloSelecionado && !!operacaoSelecionada;
@@ -171,10 +198,18 @@ export function GerarDocumentoDialog({
             <Select
               value={modeloId}
               onValueChange={setModeloId}
-              disabled={modelosDoTipo.length === 0}
+              disabled={isLoadingModelos || modelosDoTipo.length === 0}
             >
               <SelectTrigger>
-                <SelectValue placeholder={modelosDoTipo.length === 0 ? "Sem modelo ativo" : "Escolha o modelo"} />
+                <SelectValue
+                  placeholder={
+                    isLoadingModelos
+                      ? "Carregando..."
+                      : modelosDoTipo.length === 0
+                        ? "Nenhum modelo disponível"
+                        : "Selecione..."
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
                 {modelosDoTipo.map((m) => (
@@ -187,12 +222,24 @@ export function GerarDocumentoDialog({
           </div>
           <div className="space-y-2">
             <Label>3. Operação</Label>
-            <Select value={operacaoId} onValueChange={setOperacaoId}>
+            <Select
+              value={operacaoId}
+              onValueChange={setOperacaoId}
+              disabled={isLoadingOperacoes || operacoes.length === 0}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione a operação" />
+                <SelectValue
+                  placeholder={
+                    isLoadingOperacoes
+                      ? "Carregando..."
+                      : operacoes.length === 0
+                        ? "Nenhuma operação disponível"
+                        : "Selecione a operação"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {mockOperacoes.map((o) => (
+                {operacoes.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
                     {o.numero} — {o.cedenteNome}
                   </SelectItem>
@@ -278,8 +325,8 @@ export function GerarDocumentoDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSalvar} disabled={!podeSalvar}>
-            Salvar como documento gerado
+          <Button onClick={handleSalvar} disabled={!podeSalvar || isCreating}>
+            {isCreating ? "Gerando..." : "Salvar como documento gerado"}
           </Button>
         </div>
       </DialogContent>

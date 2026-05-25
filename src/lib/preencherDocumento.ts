@@ -1,7 +1,7 @@
 import { Operacao } from "@/data/mockOperacoes";
-import { mockClientes } from "@/data/mockClientes";
-import { mockTitulos, Titulo } from "@/data/mockTitulos";
-import { mockSacados } from "@/data/mockSacados";
+import type { Cliente } from "@/data/mockClientes";
+import type { Titulo } from "@/data/mockTitulos";
+import type { Sacado } from "@/data/mockSacados";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
 
@@ -38,13 +38,16 @@ function formatarListaTitulos(titulos: Titulo[]): string {
  * documento do sacado, data de emissão e status). Mantida separada da
  * `formatarListaTitulos` para não quebrar os modelos de contrato/aditivo.
  */
-function formatarListaTitulosBordero(titulos: Titulo[]): string {
+function formatarListaTitulosBordero(
+  titulos: Titulo[],
+  sacados: Sacado[],
+): string {
   if (titulos.length === 0) {
     return "│ (nenhum título associado)                                                                                                                                  │";
   }
   return titulos
     .map((t) => {
-      const sac = mockSacados.find((s) => s.id === t.sacadoId);
+      const sac = sacados.find((s) => s.id === t.sacadoId);
       const num = t.numero.padEnd(12).slice(0, 12);
       const tipo = t.tipo.padEnd(15).slice(0, 15);
       const sacNome = (sac?.nome ?? t.sacadoNome).padEnd(26).slice(0, 26);
@@ -62,18 +65,18 @@ function formatarListaTitulosBordero(titulos: Titulo[]): string {
 }
 
 /**
- * Monta o dicionário de placeholders a partir de uma operação mockada.
+ * Monta o dicionário de placeholders a partir de uma operação e dos dados
+ * relacionados (cedente, títulos, sacados) — função PURA, sem acesso a mock.
  * Inclui valores não cobertos pela operação (ex.: contrato master) com
- * defaults plausíveis — todos sujeitos a revisão.
+ * defaults plausíveis — todos sujeitos a revisão. EMPRESA_FACTORING ainda é
+ * constante mock (dívida: mover para Configurações em tarefa futura).
  */
 export function montarPlaceholders(
   operacao: Operacao,
+  cedente: Cliente | undefined,
+  titulos: Titulo[],
+  sacados: Sacado[],
 ): Record<string, string> {
-  const cedente = mockClientes.find((c) => c.id === operacao.cedenteId);
-  const titulos = mockTitulos.filter((t) =>
-    operacao.titulosIds.includes(t.id),
-  );
-
   const cedenteEnderecoLinha = cedente
     ? `${cedente.endereco}, ${cedente.numero}${cedente.complemento ? " - " + cedente.complemento : ""} — ${cedente.bairro}, ${cedente.cidade}/${cedente.estado}, CEP ${cedente.cep}`
     : "[endereço pendente]";
@@ -112,7 +115,7 @@ export function montarPlaceholders(
 
     // Títulos
     lista_titulos: formatarListaTitulos(titulos),
-    lista_titulos_bordero: formatarListaTitulosBordero(titulos),
+    lista_titulos_bordero: formatarListaTitulosBordero(titulos, sacados),
 
     // Assinatura
     cidade_assinatura: cedente?.cidade ?? EMPRESA_FACTORING.cidade,
