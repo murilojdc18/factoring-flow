@@ -43,11 +43,11 @@ export const USE_SUPABASE = {
   // passam pelo hook useModelosDocumento (página Contratos: leitura dos modelos;
   // e GerarDocumentoDialog). A escrita de modelos pela UI segue desativada
   // (decisão D5 da 2.5). Decisão da 2.5a.
-  modelos_documentos: false,
+  modelos_documentos: true,
   // Ligar `documentos` ativa o Supabase APENAS nos consumidores que passam pelo
   // hook useDocumentosGerados (Contratos, Relatorios, OperacaoDetalhes), que
   // substitui o documentosStore em memória. Decisão da 2.5b.
-  documentos: false,
+  documentos: true,
   cobrancas: false,
   compliance: false,
 } as const;
