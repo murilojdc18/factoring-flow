@@ -640,6 +640,91 @@ export type Database = {
         }
         Relationships: []
       }
+      recompras: {
+        Row: {
+          acao: Database["public"]["Enums"]["recompra_acao"]
+          cedente_id: string
+          cedente_nome: string
+          created_at: string
+          created_by: string | null
+          id: string
+          motivo: string
+          observacoes: string
+          operacao_id: string | null
+          operacao_numero: string
+          resolvido_em: string | null
+          responsavel: string
+          sacado_nome: string
+          status: Database["public"]["Enums"]["recompra_status"]
+          titulo_id: string
+          titulo_numero: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          acao: Database["public"]["Enums"]["recompra_acao"]
+          cedente_id: string
+          cedente_nome?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          motivo?: string
+          observacoes?: string
+          operacao_id?: string | null
+          operacao_numero?: string
+          resolvido_em?: string | null
+          responsavel?: string
+          sacado_nome?: string
+          status?: Database["public"]["Enums"]["recompra_status"]
+          titulo_id: string
+          titulo_numero?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          acao?: Database["public"]["Enums"]["recompra_acao"]
+          cedente_id?: string
+          cedente_nome?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          motivo?: string
+          observacoes?: string
+          operacao_id?: string | null
+          operacao_numero?: string
+          resolvido_em?: string | null
+          responsavel?: string
+          sacado_nome?: string
+          status?: Database["public"]["Enums"]["recompra_status"]
+          titulo_id?: string
+          titulo_numero?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recompras_cedente_id_fkey"
+            columns: ["cedente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recompras_operacao_id_fkey"
+            columns: ["operacao_id"]
+            isOneToOne: false
+            referencedRelation: "operacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recompras_titulo_id_fkey"
+            columns: ["titulo_id"]
+            isOneToOne: false
+            referencedRelation: "titulos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sacados: {
         Row: {
           bairro: string
@@ -933,6 +1018,12 @@ export type Database = {
         | "Recomprada"
         | "Cancelada"
       recompra_acao: "Recompra" | "Substituição" | "Análise interna"
+      recompra_status:
+        | "Em análise de recompra"
+        | "Recompra solicitada"
+        | "Substituição solicitada"
+        | "Resolvido"
+        | "Cancelado"
       sacado_status: "Ativo" | "Em análise" | "Bloqueado" | "Inativo"
       tipo_pessoa: "PJ" | "PF"
       tipo_titulo:
@@ -1142,6 +1233,13 @@ export const Constants = {
         "Cancelada",
       ],
       recompra_acao: ["Recompra", "Substituição", "Análise interna"],
+      recompra_status: [
+        "Em análise de recompra",
+        "Recompra solicitada",
+        "Substituição solicitada",
+        "Resolvido",
+        "Cancelado",
+      ],
       sacado_status: ["Ativo", "Em análise", "Bloqueado", "Inativo"],
       tipo_pessoa: ["PJ", "PF"],
       tipo_titulo: [
