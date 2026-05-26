@@ -22,10 +22,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Titulo } from "@/data/mockTitulos";
 import {
-  recomprasStore,
   TIPOS_ACAO_RECOMPRA,
   TipoAcaoRecompra,
 } from "@/data/mockRecompras";
+import { useRecompras } from "@/hooks/useRecompras";
 import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
@@ -52,10 +52,12 @@ export function RecompraDialog({
   onClose,
   onSaved,
 }: Props) {
+  const { create } = useRecompras();
   const [tipoAcao, setTipoAcao] = useState<TipoAcaoRecompra>("Recompra");
   const [motivo, setMotivo] = useState("");
   const [observacoes, setObservacoes] = useState("");
-  const [responsavel, setResponsavel] = useState("Usuário atual");
+  const [responsavel, setResponsavel] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   // Reset ao abrir um novo título
   useEffect(() => {
@@ -63,13 +65,13 @@ export function RecompraDialog({
       setTipoAcao("Recompra");
       setMotivo("");
       setObservacoes("");
-      setResponsavel("Usuário atual");
+      setResponsavel("");
     }
   }, [titulo]);
 
   const open = !!titulo;
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!titulo) return;
     if (!motivo.trim()) {
       toast.error("Informe o motivo da solicitação.");
@@ -79,25 +81,43 @@ export function RecompraDialog({
       toast.error("Informe o responsável.");
       return;
     }
-    const nova = recomprasStore.criar({
-      tituloId: titulo.id,
-      tituloNumero: titulo.numero,
-      cedenteNome: titulo.cedenteNome,
-      sacadoNome: titulo.sacadoNome,
-      operacaoId,
-      operacaoNumero,
-      tipoAcao,
-      motivo: motivo.trim(),
-      observacoes: observacoes.trim(),
-      responsavel: responsavel.trim(),
-    });
-    toast.success(`${tipoAcao} registrada para ${titulo.numero}.`, {
-      description: `Status: ${nova.status}`,
-    });
-    onSaved?.(
-      `${tipoAcao} solicitada para ${titulo.numero} por ${nova.responsavel} — ${motivo.trim()}`,
-    );
-    onClose();
+    setIsCreating(true);
+    try {
+      // cedente_id e operacao_id (FKs) não moram no SolicitacaoRecompra: vão no
+      // ctx. cedenteId sai do título; operacaoId pode ser undefined quando
+      // aberto de /cobranças (o hook/mapper grava null — 2.6.1c).
+      const nova = await create(
+        {
+          tituloId: titulo.id,
+          tituloNumero: titulo.numero,
+          cedenteNome: titulo.cedenteNome,
+          sacadoNome: titulo.sacadoNome,
+          operacaoId,
+          operacaoNumero,
+          tipoAcao,
+          motivo: motivo.trim(),
+          observacoes: observacoes.trim(),
+          responsavel: responsavel.trim(),
+        },
+        { cedenteId: titulo.cedenteId, operacaoId },
+      );
+      toast.success(`${tipoAcao} registrada para ${titulo.numero}.`, {
+        description: `Status: ${nova.status}`,
+      });
+      // onSaved só no sucesso (ex.: registrar no histórico da operação).
+      onSaved?.(
+        `${tipoAcao} solicitada para ${titulo.numero} por ${nova.responsavel} — ${motivo.trim()}`,
+      );
+      onClose();
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Erro ao registrar a solicitação.",
+      );
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -151,6 +171,7 @@ export function RecompraDialog({
                   id="resp"
                   value={responsavel}
                   onChange={(e) => setResponsavel(e.target.value)}
+                  placeholder="Quem está conduzindo esta solicitação"
                 />
               </div>
             </div>
@@ -181,7 +202,9 @@ export function RecompraDialog({
               <Button variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button onClick={handleSalvar}>Registrar solicitação</Button>
+              <Button onClick={handleSalvar} disabled={isCreating}>
+                {isCreating ? "Salvando..." : "Registrar solicitação"}
+              </Button>
             </DialogFooter>
           </>
         )}

@@ -64,10 +64,8 @@ import {
   TIPOS_CONTATO,
   useCobrancas,
 } from "@/data/mockCobrancas";
-import {
-  EstadoRecompraTitulo,
-  useRecompras,
-} from "@/data/mockRecompras";
+import { EstadoRecompraTitulo } from "@/data/mockRecompras";
+import { useRecompras } from "@/hooks/useRecompras";
 import { RecompraDialog } from "@/components/recompras/RecompraDialog";
 import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";

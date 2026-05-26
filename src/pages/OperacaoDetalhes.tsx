@@ -46,16 +46,14 @@ import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialo
 import { DocumentoGerado } from "@/data/mockDocumentosGerados";
 import { RecompraDialog } from "@/components/recompras/RecompraDialog";
 import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
-import {
-  STATUS_RECOMPRA,
-  recomprasStore,
-  useRecompras,
-} from "@/data/mockRecompras";
+import { STATUS_RECOMPRA, type StatusRecompra } from "@/data/mockRecompras";
+import { useRecompras } from "@/hooks/useRecompras";
 import { Titulo } from "@/data/mockTitulos";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -71,11 +69,41 @@ export default function OperacaoDetalhes() {
   >(null);
 
   // Recompra/substituição
-  const { porOperacao, estado } = useRecompras();
+  const { porOperacao, estado, updateStatus } = useRecompras();
   const [recompraTitulo, setRecompraTitulo] = useState<Titulo | null>(null);
   const [eventosLocais, setEventosLocais] = useState<
     { data: string; texto: string }[]
   >([]);
+
+  const handleAtualizarStatus = async (id: string, st: StatusRecompra) => {
+    try {
+      await updateStatus(id, st);
+      toast.success(`Status atualizado para ${st}.`);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Erro ao atualizar o status.",
+      );
+    }
+  };
+
+  // D8: cancelar = soft delete (status "Cancelado"), com confirmação.
+  const handleCancelarRecompra = async (id: string) => {
+    if (
+      !window.confirm(
+        "Cancelar esta solicitação? O registro é preservado (soft delete), apenas marcado como Cancelado.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await updateStatus(id, "Cancelado");
+      toast.success("Solicitação cancelada.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Erro ao cancelar a solicitação.",
+      );
+    }
+  };
 
   const { operacoes, isLoading: isLoadingOperacoes, error: errorOperacoes } =
     useOperacoes();
@@ -415,14 +443,25 @@ export default function OperacaoDetalhes() {
                               {STATUS_RECOMPRA.map((st) => (
                                 <DropdownMenuItem
                                   key={st}
-                                  onClick={() => {
-                                    recomprasStore.atualizarStatus(s.id, st);
-                                    toast.success(`Status atualizado para ${st}.`);
-                                  }}
+                                  onClick={() => handleAtualizarStatus(s.id, st)}
                                 >
                                   {st}
                                 </DropdownMenuItem>
                               ))}
+                              {s.status !== "Cancelado" &&
+                                s.status !== "Resolvido" && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() =>
+                                        handleCancelarRecompra(s.id)
+                                      }
+                                    >
+                                      Cancelar solicitação
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
