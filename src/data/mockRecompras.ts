@@ -14,13 +14,19 @@ export const TIPOS_ACAO_RECOMPRA: TipoAcaoRecompra[] = [
 /**
  * Status de recompra/substituição aplicado ao título.
  * Independente do status financeiro do próprio título.
+ * "Cancelado" (D8) é soft delete: cancelar uma solicitação muda o status para
+ * Cancelado, nunca remove o registro. Não é status inicial nem transição comum
+ * do dropdown — vem da ação dedicada "Cancelar solicitação" (ver 2.6.5).
  */
 export type StatusRecompra =
   | "Em análise de recompra"
   | "Recompra solicitada"
   | "Substituição solicitada"
-  | "Resolvido";
+  | "Resolvido"
+  | "Cancelado";
 
+// Transições "normais" oferecidas no dropdown de status. NÃO inclui "Cancelado"
+// (D8): o cancelamento é ação dedicada, não uma troca de status comum.
 export const STATUS_RECOMPRA: StatusRecompra[] = [
   "Em análise de recompra",
   "Recompra solicitada",

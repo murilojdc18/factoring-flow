@@ -9,6 +9,8 @@ const map: Record<StatusRecompra, string> = {
   "Substituição solicitada":
     "bg-warning/15 text-warning-foreground border-warning/40",
   Resolvido: "bg-success/15 text-success border-success/40",
+  // Estado "morto" (soft delete — D8): cinza/muted + riscado leve.
+  Cancelado: "bg-muted text-muted-foreground border-border line-through",
 };
 
 export function RecompraStatusBadge({ status }: { status: StatusRecompra }) {
