@@ -48,6 +48,12 @@ export const USE_SUPABASE = {
   // hook useDocumentosGerados (Contratos, Relatorios, OperacaoDetalhes), que
   // substitui o documentosStore em memória. Decisão da 2.5b.
   documentos: true,
+  // Ligar `recompras` ativa o Supabase APENAS nos consumidores que passam pelo
+  // hook useRecompras (RecompraDialog, OperacaoDetalhes, Cobrancas). Fluxo
+  // proforma (D1): registra a solicitação, não mexe em status financeiro de
+  // título/operação. Vira `true` na 2.6.6, depois de dialog + consumidores
+  // ligados (2.6.4/2.6.5). Decisão da 2.6.3. Virada na 2.6.6.
+  recompras: true,
   cobrancas: false,
   compliance: false,
 } as const;
