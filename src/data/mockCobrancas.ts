@@ -22,17 +22,37 @@ export const STATUS_COBRANCA: StatusCobranca[] = [
 ];
 
 export type TipoContato =
-  | "Telefone"
-  | "WhatsApp"
+  | "Ligação"
   | "E-mail"
-  | "Presencial"
+  | "WhatsApp"
+  | "Visita"
+  | "Carta"
   | "Outro";
 
 export const TIPOS_CONTATO: TipoContato[] = [
-  "Telefone",
-  "WhatsApp",
+  "Ligação",
   "E-mail",
-  "Presencial",
+  "WhatsApp",
+  "Visita",
+  "Carta",
+  "Outro",
+];
+
+/** Resultado categórico de um contato (enum `cobranca_resultado` do banco). */
+export type ResultadoCobranca =
+  | "Promessa de pagamento"
+  | "Sem retorno"
+  | "Negociado"
+  | "Recusado"
+  | "Pagamento confirmado"
+  | "Outro";
+
+export const RESULTADOS_COBRANCA: ResultadoCobranca[] = [
+  "Promessa de pagamento",
+  "Sem retorno",
+  "Negociado",
+  "Recusado",
+  "Pagamento confirmado",
   "Outro",
 ];
 
@@ -45,7 +65,7 @@ export interface EventoCobranca {
   dataHora: string; // ISO completo
   usuario: string;
   tipoContato: TipoContato;
-  resultado: string;
+  resultado: ResultadoCobranca;
   proximaAcao: string;
   proximaAcaoData: string; // ISO yyyy-mm-dd ("" se não houver)
   observacoes: string;
@@ -85,11 +105,12 @@ const eventosIniciais: EventoCobranca[] = [
     sacadoNome: "Modas Bella SA",
     dataHora: addHoursIsoFull(28),
     usuario: "Carla Mendes",
-    tipoContato: "Telefone",
-    resultado: "Sacado confirmou recebimento da NF e prometeu pagamento.",
+    tipoContato: "Ligação",
+    resultado: "Promessa de pagamento",
     proximaAcao: "Confirmar pagamento por comprovante",
     proximaAcaoData: addDaysIso(2),
-    observacoes: "Falamos com o financeiro (Sra. Lúcia).",
+    observacoes:
+      "Sacado confirmou recebimento da NF e prometeu pagamento. Falamos com o financeiro (Sra. Lúcia).",
   },
   {
     id: "EVC-002",
@@ -100,10 +121,10 @@ const eventosIniciais: EventoCobranca[] = [
     dataHora: addHoursIsoFull(50),
     usuario: "Rafael Souza",
     tipoContato: "WhatsApp",
-    resultado: "Sem resposta. Mensagem entregue.",
+    resultado: "Sem retorno",
     proximaAcao: "Tentar contato telefônico",
     proximaAcaoData: addDaysIso(1),
-    observacoes: "",
+    observacoes: "Sem resposta. Mensagem entregue.",
   },
 ];
 
