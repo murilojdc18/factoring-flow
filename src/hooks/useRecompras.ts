@@ -66,6 +66,39 @@ function estadoDerivado(
 }
 
 /**
+ * Back-link automático (2.7.1): resolve a operação mais recente que contém o
+ * título, para preencher `operacao_id`/`operacao_numero` quando a recompra
+ * nasce sem operação (ex.: criada em /cobranças). São duas leituras — o vínculo
+ * em `operacao_titulos` (ordenado pelo `created_at` do vínculo, que acompanha a
+ * criação da operação) e o `numero` em `operacoes` para o snapshot. Qualquer
+ * falha/ausência devolve `null`: o create segue gravando `operacao_id` null
+ * (defensivo — título nunca operado não bloqueia o registro).
+ */
+async function resolverOperacaoDoTitulo(
+  tituloId: string,
+): Promise<{ operacaoId: string; operacaoNumero: string } | null> {
+  const { data: vinculo, error: vinculoErro } = await supabase
+    .from("operacao_titulos")
+    .select("operacao_id, created_at")
+    .eq("titulo_id", tituloId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (vinculoErro || !vinculo) return null;
+
+  const { data: operacao } = await supabase
+    .from("operacoes")
+    .select("numero")
+    .eq("id", vinculo.operacao_id)
+    .maybeSingle();
+
+  return {
+    operacaoId: vinculo.operacao_id,
+    operacaoNumero: operacao?.numero ?? "",
+  };
+}
+
+/**
  * Hook de recompras / substituições / análises internas (sub-tarefa 2.6.3).
  * Substitui o `useRecompras`/`recomprasStore` em memória como fonte para a UI
  * (RecompraDialog, OperacaoDetalhes, Cobrancas — ligados na 2.6.4/2.6.5).
@@ -127,17 +160,37 @@ export function useRecompras() {
       input: Partial<SolicitacaoRecompra>;
       ctx: RecompraContext;
     }): Promise<SolicitacaoRecompra> => {
+      // Back-link (2.7.1): recompra criada sem operação (ex.: /cobranças) herda
+      // a operação mais recente do título, para o card da operação enxergá-la.
+      // Defensivo: se a resolução falhar, segue com operacao_id null.
+      let ctxEfetivo = ctx;
+      let inputEfetivo = input;
+      if (!ctx.operacaoId && input.tituloId) {
+        try {
+          const operacao = await resolverOperacaoDoTitulo(input.tituloId);
+          if (operacao) {
+            ctxEfetivo = { ...ctx, operacaoId: operacao.operacaoId };
+            inputEfetivo = { ...input, operacaoNumero: operacao.operacaoNumero };
+          }
+        } catch (erro) {
+          console.warn(
+            "[useRecompras] back-link da operação falhou; gravando operacao_id null",
+            erro,
+          );
+        }
+      }
+
       // Registra quem solicitou (auditoria). created_by é nullable; sem sessão,
       // segue como null em vez de bloquear o insert.
       const { data: userData } = await supabase.auth.getUser();
       const status =
-        input.status ??
-        statusInicialPorAcao(input.tipoAcao ?? "Análise interna");
+        inputEfetivo.status ??
+        statusInicialPorAcao(inputEfetivo.tipoAcao ?? "Análise interna");
       const { data, error } = await supabase
         .from("recompras")
         .insert([
           {
-            ...recompraToRow({ ...input, status }, ctx),
+            ...recompraToRow({ ...inputEfetivo, status }, ctxEfetivo),
             created_by: userData.user?.id ?? null,
           },
         ])
