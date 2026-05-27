@@ -56,7 +56,11 @@ export const USE_SUPABASE = {
   // título/operação. Vira `true` na 2.6.6, depois de dialog + consumidores
   // ligados (2.6.4/2.6.5). Decisão da 2.6.3. Virada na 2.6.6.
   recompras: true,
-  cobrancas: false,
+  // Ligar `cobrancas` ativa o Supabase nos consumidores que passam pelo hook
+  // useCobrancas (página /cobranças: registro de eventos + estado de cobrança
+  // derivado por título). Virada na 2.8.5, após migration (2.8.1),
+  // mapper/derivação (2.8.2), hook (2.8.3) e UI (2.8.4). Decisão da 2.8.
+  cobrancas: true,
   compliance: false,
 } as const;
 

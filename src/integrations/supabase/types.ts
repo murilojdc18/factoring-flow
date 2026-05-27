@@ -166,6 +166,7 @@ export type Database = {
           id: string
           observacoes: string
           operacao_id: string | null
+          proxima_acao: string
           proximo_contato: string | null
           responsavel: string
           resultado: Database["public"]["Enums"]["cobranca_resultado"]
@@ -179,6 +180,7 @@ export type Database = {
           id?: string
           observacoes?: string
           operacao_id?: string | null
+          proxima_acao?: string
           proximo_contato?: string | null
           responsavel?: string
           resultado: Database["public"]["Enums"]["cobranca_resultado"]
@@ -192,6 +194,7 @@ export type Database = {
           id?: string
           observacoes?: string
           operacao_id?: string | null
+          proxima_acao?: string
           proximo_contato?: string | null
           responsavel?: string
           resultado?: Database["public"]["Enums"]["cobranca_resultado"]
@@ -940,10 +943,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      criar_operacao: {
-        Args: { payload: Json }
-        Returns: string
-      }
+      criar_operacao: { Args: { payload: Json }; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
@@ -962,6 +962,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_or_diretoria: { Args: never; Returns: boolean }
     }
     Enums: {
       anexo_entidade:

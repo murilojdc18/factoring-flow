@@ -46,7 +46,9 @@ function traduzirErroTitulo(error: { code?: string; message: string }): Error {
  * Cobrancas. OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento
  * ainda leem `mockTitulos` direto e NÃO são afetados pela flag; cada um migra
  * quando suas entidades (operacoes/relatorios/documentos) forem ligadas.
- * Decisão consciente da sub-tarefa 2.3 (espelha a 2.2); Cobrancas ligada na 2.7.
+ * Decisão consciente da sub-tarefa 2.3 (espelha a 2.2). Cobrancas lê títulos por
+ * aqui desde a 2.7; seus eventos/estado de cobrança migraram via useCobrancas na
+ * 2.8 (flag `cobrancas`).
  */
 export function useTitulos() {
   const enabled = isSupabaseEnabled("titulos");
