@@ -14,6 +14,7 @@ import {
   rowToRecompra,
   type RecompraContext,
 } from "@/lib/mappers/recompra";
+import { resolverOperacaoDoTitulo } from "@/lib/operacaoLookup";
 
 const QUERY_KEY = ["recompras"] as const;
 
@@ -62,39 +63,6 @@ function estadoDerivado(
     status: ultima.status,
     ultimaSolicitacaoId: ultima.id,
     atualizadoEm: ultima.resolvidoEm ?? ultima.criadoEm,
-  };
-}
-
-/**
- * Back-link automático (2.7.1): resolve a operação mais recente que contém o
- * título, para preencher `operacao_id`/`operacao_numero` quando a recompra
- * nasce sem operação (ex.: criada em /cobranças). São duas leituras — o vínculo
- * em `operacao_titulos` (ordenado pelo `created_at` do vínculo, que acompanha a
- * criação da operação) e o `numero` em `operacoes` para o snapshot. Qualquer
- * falha/ausência devolve `null`: o create segue gravando `operacao_id` null
- * (defensivo — título nunca operado não bloqueia o registro).
- */
-async function resolverOperacaoDoTitulo(
-  tituloId: string,
-): Promise<{ operacaoId: string; operacaoNumero: string } | null> {
-  const { data: vinculo, error: vinculoErro } = await supabase
-    .from("operacao_titulos")
-    .select("operacao_id, created_at")
-    .eq("titulo_id", tituloId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (vinculoErro || !vinculo) return null;
-
-  const { data: operacao } = await supabase
-    .from("operacoes")
-    .select("numero")
-    .eq("id", vinculo.operacao_id)
-    .maybeSingle();
-
-  return {
-    operacaoId: vinculo.operacao_id,
-    operacaoNumero: operacao?.numero ?? "",
   };
 }
 
