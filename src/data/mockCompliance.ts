@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { mockClientes } from "./mockClientes";
 import { mockOperacoes } from "./mockOperacoes";
 
-export type NivelRisco = "Baixo" | "Médio" | "Alto";
+export type NivelRisco = "Baixo" | "Médio" | "Alto" | "Crítico";
 export type EscopoAnalise = "Cliente" | "Operação";
 
-export const NIVEIS_RISCO: NivelRisco[] = ["Baixo", "Médio", "Alto"];
+export const NIVEIS_RISCO: NivelRisco[] = ["Baixo", "Médio", "Alto", "Crítico"];
 
 export interface ItemChecklist {
   id: string;
@@ -266,6 +266,8 @@ export function corDoRisco(n: NivelRisco) {
       return "bg-warning/15 text-warning border-warning/30";
     case "Alto":
       return "bg-destructive/15 text-destructive border-destructive/30";
+    case "Crítico":
+      return "bg-destructive text-destructive-foreground border-destructive";
   }
 }
 
