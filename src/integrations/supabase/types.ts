@@ -226,6 +226,7 @@ export type Database = {
           created_by: string | null
           data_analise: string
           id: string
+          justificativa: string
           nivel_risco: Database["public"]["Enums"]["compliance_risco"]
           observacoes: string
           operacao_id: string | null
@@ -240,6 +241,7 @@ export type Database = {
           created_by?: string | null
           data_analise?: string
           id?: string
+          justificativa?: string
           nivel_risco?: Database["public"]["Enums"]["compliance_risco"]
           observacoes?: string
           operacao_id?: string | null
@@ -254,6 +256,7 @@ export type Database = {
           created_by?: string | null
           data_analise?: string
           id?: string
+          justificativa?: string
           nivel_risco?: Database["public"]["Enums"]["compliance_risco"]
           observacoes?: string
           operacao_id?: string | null

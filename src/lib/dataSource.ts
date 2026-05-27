@@ -61,7 +61,12 @@ export const USE_SUPABASE = {
   // derivado por título). Virada na 2.8.5, após migration (2.8.1),
   // mapper/derivação (2.8.2), hook (2.8.3) e UI (2.8.4). Decisão da 2.8.
   cobrancas: true,
-  compliance: false,
+  // Ligar `compliance` ativa o Supabase nos consumidores que passam pelo hook
+  // useCompliance (página /compliance: análises de risco append-only + agregação
+  // da atual por alvo com histórico). Políticas/checklists seguem estáticos.
+  // Virada na 2.9.5, após migration (2.9.1), mapper/agregação (2.9.2), hook
+  // (2.9.3) e UI (2.9.4). Decisão da 2.9.
+  compliance: true,
 } as const;
 
 export type DataSourceModule = keyof typeof USE_SUPABASE;
