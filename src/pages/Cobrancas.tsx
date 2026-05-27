@@ -55,15 +55,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Titulo } from "@/data/mockTitulos";
 import {
-  cobrancasStore,
   EstadoCobranca,
   EventoCobranca,
-  STATUS_COBRANCA,
+  RESULTADOS_COBRANCA,
+  ResultadoCobranca,
   StatusCobranca,
   TipoContato,
   TIPOS_CONTATO,
-  useCobrancas,
 } from "@/data/mockCobrancas";
+import { useCobrancas } from "@/hooks/useCobrancas";
+import { deriveEstado } from "@/lib/cobrancaEstado";
 import { EstadoRecompraTitulo } from "@/data/mockRecompras";
 import { useRecompras } from "@/hooks/useRecompras";
 import { useTitulos } from "@/hooks/useTitulos";
@@ -96,25 +97,6 @@ function StatusBadge({ status }: { status: StatusCobranca }) {
   );
 }
 
-/** Estado de cobrança efetivo: usa override do store ou deriva do título. */
-function estadoEfetivo(
-  titulo: Titulo,
-  override: EstadoCobranca | undefined,
-): EstadoCobranca {
-  if (override) return override;
-  const dias = daysUntil(titulo.dataVencimento);
-  let status: StatusCobranca = "A vencer";
-  if (titulo.status === "Liquidado") status = "Liquidado";
-  else if (titulo.status === "Recomprado") status = "Para recompra";
-  else if (dias < 0) status = "Em cobrança";
-  return {
-    status,
-    ultimaAcao: "—",
-    proximaAcao: dias < 0 ? "Iniciar contato" : "Aguardar vencimento",
-    proximaAcaoData: titulo.dataVencimento,
-  };
-}
-
 function formatDataHora(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString("pt-BR", {
@@ -130,8 +112,25 @@ function formatDataHora(iso: string): string {
 
 type TabKey = "a-vencer" | "vencidos" | "liquidados" | "historico";
 
+/**
+ * "Marcar como" (§6/D2) deixou de setar status solto: registra um evento rápido
+ * cujo `resultado` deriva o status na tela. Só os status mapeáveis a uma
+ * categoria de `cobranca_resultado` ficam no menu ("Para recompra" saiu — tem o
+ * fluxo dedicado de recompra).
+ */
+const RESULTADO_POR_STATUS: Partial<Record<StatusCobranca, ResultadoCobranca>> = {
+  "Promessa de pagamento": "Promessa de pagamento",
+  "Em negociação": "Negociado",
+  Liquidado: "Pagamento confirmado",
+};
+
 export default function Cobrancas() {
-  const { eventos, estados } = useCobrancas();
+  const {
+    eventos,
+    estado: getEstadoCobranca,
+    registrarEvento,
+    isLoading: cobrancasLoading,
+  } = useCobrancas();
   const { titulos, isLoading, error } = useTitulos();
   const [tab, setTab] = useState<TabKey>("a-vencer");
   const [busca, setBusca] = useState("");
@@ -141,16 +140,35 @@ export default function Cobrancas() {
   const [recompraTitulo, setRecompraTitulo] = useState<Titulo | null>(null);
   const { estado: getEstadoRecompra } = useRecompras();
 
-  // Constrói linhas combinando título + estado efetivo
+  // Constrói linhas combinando título + estado de cobrança derivado (4 níveis).
   const linhas = useMemo(() => {
     return titulos
       .filter((t) => t.status !== "Cancelado")
       .map((t) => ({
         titulo: t,
-        estado: estadoEfetivo(t, estados[t.id]),
+        estado: deriveEstado(t, getEstadoCobranca(t.id)),
         dias: daysUntil(t.dataVencimento),
       }));
-  }, [titulos, estados]);
+    // getEstadoCobranca deriva de `eventos`; depender de `eventos` basta.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titulos, eventos]);
+
+  // Enriquecimento (§4): cobrancas_historico não guarda snapshots de nome —
+  // derivamos numero/cedente/sacado cruzando o evento com o título carregado.
+  const eventosEnriquecidos = useMemo(() => {
+    const porId = new Map(titulos.map((t) => [t.id, t]));
+    return eventos.map((e) => {
+      const t = porId.get(e.tituloId);
+      return t
+        ? {
+            ...e,
+            tituloNumero: t.numero,
+            cedenteNome: t.cedenteNome,
+            sacadoNome: t.sacadoNome,
+          }
+        : e;
+    });
+  }, [eventos, titulos]);
 
   const filtroBusca = (txt: string) => {
     const q = busca.trim().toLowerCase();
@@ -191,16 +209,36 @@ export default function Cobrancas() {
     .filter((l) => l.estado.status === "Liquidado")
     .reduce((s, l) => s + l.titulo.valorFace, 0);
 
-  const eventosFiltrados = eventos.filter((e) =>
+  const eventosFiltrados = eventosEnriquecidos.filter((e) =>
     filtroBusca(
       `${e.tituloNumero} ${e.cedenteNome} ${e.sacadoNome} ${e.usuario} ${e.tipoContato} ${e.resultado}`,
     ),
   );
 
-  // Ações rápidas (status)
-  const aplicarStatus = (titulo: Titulo, status: StatusCobranca) => {
-    cobrancasStore.setStatus(titulo.id, status);
-    toast.success(`${titulo.numero} marcado como ${status}.`);
+  // Ação rápida: "Marcar como" registra um evento curto cujo resultado deriva
+  // o status na tela (§6/D2). Sem mais setStatus solto.
+  const aplicarStatus = async (titulo: Titulo, status: StatusCobranca) => {
+    const resultado = RESULTADO_POR_STATUS[status];
+    if (!resultado) return;
+    try {
+      await registrarEvento({
+        tituloId: titulo.id,
+        tituloNumero: titulo.numero,
+        cedenteNome: titulo.cedenteNome,
+        sacadoNome: titulo.sacadoNome,
+        dataHora: new Date().toISOString(),
+        tipoContato: "Outro",
+        resultado,
+        proximaAcao: "",
+        proximaAcaoData: "",
+        observacoes: "Status atualizado via ação rápida.",
+      });
+      toast.success(`${titulo.numero} marcado como ${status}.`);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível registrar.",
+      );
+    }
   };
 
   return (
@@ -214,12 +252,12 @@ export default function Cobrancas() {
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Operação manual</AlertTitle>
         <AlertDescription>
-          Esta tela registra ações de cobrança em base mockada. Não envia
-          e-mails, SMS ou WhatsApp. Régua automática não está habilitada.
+          Esta tela registra ações de cobrança no banco. Não envia comunicação
+          automaticamente (e-mail/WhatsApp). Operação manual.
         </AlertDescription>
       </Alert>
 
-      {isLoading ? (
+      {isLoading || cobrancasLoading ? (
         <LoadingState label="Carregando títulos..." />
       ) : error ? (
         <ErrorState
@@ -329,12 +367,14 @@ export default function Cobrancas() {
       <RegistrarContatoDialog
         titulo={contatoTitulo}
         onClose={() => setContatoTitulo(null)}
+        registrarEvento={registrarEvento}
       />
 
       {/* Modal: Adicionar observação (registra um evento "Outro" curto) */}
       <ObservacaoDialog
         titulo={obsTitulo}
         onClose={() => setObsTitulo(null)}
+        registrarEvento={registrarEvento}
       />
 
       {/* Modal: Recompra / Substituição */}
@@ -497,9 +537,6 @@ function TabelaTitulos({
                       <DropdownMenuItem onClick={() => onStatus(titulo, "Liquidado")}>
                         Liquidado
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onStatus(titulo, "Para recompra")}>
-                        Para recompra
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onRecompra(titulo)}>
                         <ShieldAlert className="mr-2 h-4 w-4 text-warning" />
@@ -587,56 +624,56 @@ function TabelaHistorico({ eventos }: { eventos: EventoCobranca[] }) {
 function RegistrarContatoDialog({
   titulo,
   onClose,
+  registrarEvento,
 }: {
   titulo: Titulo | null;
   onClose: () => void;
+  registrarEvento: (input: Partial<EventoCobranca>) => Promise<void>;
 }) {
-  const [tipoContato, setTipoContato] = useState<TipoContato>("Telefone");
-  const [resultado, setResultado] = useState("");
+  const [tipoContato, setTipoContato] = useState<TipoContato>("Ligação");
+  const [resultado, setResultado] = useState<ResultadoCobranca | "">("");
   const [proximaAcao, setProximaAcao] = useState("");
   const [proximaAcaoData, setProximaAcaoData] = useState("");
   const [observacoes, setObservacoes] = useState("");
-  const [marcarStatus, setMarcarStatus] = useState<StatusCobranca | "manter">(
-    "manter",
-  );
 
   // Reset quando abre/fecha
   const open = !!titulo;
   useMemo(() => {
     if (titulo) {
-      setTipoContato("Telefone");
+      setTipoContato("Ligação");
       setResultado("");
       setProximaAcao("");
       setProximaAcaoData("");
       setObservacoes("");
-      setMarcarStatus("manter");
     }
   }, [titulo]);
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!titulo) return;
-    if (!resultado.trim()) {
-      toast.error("Descreva o resultado do contato.");
+    if (!resultado) {
+      toast.error("Selecione o resultado do contato.");
       return;
     }
-    cobrancasStore.registrarEvento({
-      tituloId: titulo.id,
-      tituloNumero: titulo.numero,
-      cedenteNome: titulo.cedenteNome,
-      sacadoNome: titulo.sacadoNome,
-      dataHora: new Date().toISOString(),
-      usuario: "Usuário atual",
-      tipoContato,
-      resultado: resultado.trim(),
-      proximaAcao: proximaAcao.trim(),
-      proximaAcaoData,
-      observacoes: observacoes.trim(),
-    });
-    if (marcarStatus !== "manter") {
-      cobrancasStore.setStatus(titulo.id, marcarStatus);
+    try {
+      await registrarEvento({
+        tituloId: titulo.id,
+        tituloNumero: titulo.numero,
+        cedenteNome: titulo.cedenteNome,
+        sacadoNome: titulo.sacadoNome,
+        dataHora: new Date().toISOString(),
+        tipoContato,
+        resultado,
+        proximaAcao: proximaAcao.trim(),
+        proximaAcaoData,
+        observacoes: observacoes.trim(),
+      });
+      toast.success("Contato registrado.");
+      onClose();
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível registrar.",
+      );
     }
-    toast.success("Contato registrado.");
-    onClose();
   };
 
   return (
@@ -668,31 +705,21 @@ function RegistrarContatoDialog({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Marcar título como</Label>
+                <Label>Resultado *</Label>
                 <Select
-                  value={marcarStatus}
-                  onValueChange={(v) => setMarcarStatus(v as StatusCobranca | "manter")}
+                  value={resultado}
+                  onValueChange={(v) => setResultado(v as ResultadoCobranca)}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manter">Manter status atual</SelectItem>
-                    {STATUS_COBRANCA.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    {RESULTADOS_COBRANCA.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="resultado">Resultado do contato *</Label>
-              <Textarea
-                id="resultado"
-                rows={3}
-                value={resultado}
-                onChange={(e) => setResultado(e.target.value)}
-                placeholder="Ex.: Sacado confirmou pagamento para 30/04."
-              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -717,12 +744,13 @@ function RegistrarContatoDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="obs">Observações internas</Label>
+              <Label htmlFor="obs">Observações</Label>
               <Textarea
                 id="obs"
-                rows={2}
+                rows={3}
                 value={observacoes}
                 onChange={(e) => setObservacoes(e.target.value)}
+                placeholder="Ex.: Sacado confirmou pagamento para 30/04; falar com o financeiro."
               />
             </div>
 
@@ -748,9 +776,11 @@ function RegistrarContatoDialog({
 function ObservacaoDialog({
   titulo,
   onClose,
+  registrarEvento,
 }: {
   titulo: Titulo | null;
   onClose: () => void;
+  registrarEvento: (input: Partial<EventoCobranca>) => Promise<void>;
 }) {
   const [obs, setObs] = useState("");
   const open = !!titulo;
@@ -758,27 +788,32 @@ function ObservacaoDialog({
     if (titulo) setObs("");
   }, [titulo]);
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!titulo) return;
     if (!obs.trim()) {
       toast.error("Escreva a observação.");
       return;
     }
-    cobrancasStore.registrarEvento({
-      tituloId: titulo.id,
-      tituloNumero: titulo.numero,
-      cedenteNome: titulo.cedenteNome,
-      sacadoNome: titulo.sacadoNome,
-      dataHora: new Date().toISOString(),
-      usuario: "Usuário atual",
-      tipoContato: "Outro",
-      resultado: "Observação interna registrada",
-      proximaAcao: "",
-      proximaAcaoData: "",
-      observacoes: obs.trim(),
-    });
-    toast.success("Observação registrada.");
-    onClose();
+    try {
+      await registrarEvento({
+        tituloId: titulo.id,
+        tituloNumero: titulo.numero,
+        cedenteNome: titulo.cedenteNome,
+        sacadoNome: titulo.sacadoNome,
+        dataHora: new Date().toISOString(),
+        tipoContato: "Outro",
+        resultado: "Outro",
+        proximaAcao: "",
+        proximaAcaoData: "",
+        observacoes: obs.trim(),
+      });
+      toast.success("Observação registrada.");
+      onClose();
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível registrar.",
+      );
+    }
   };
 
   return (
