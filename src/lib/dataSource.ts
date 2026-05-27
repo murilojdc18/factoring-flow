@@ -26,10 +26,12 @@ export const USE_SUPABASE = {
   // ligados (decisão da 2.2).
   sacados: true,
   // Ligar `titulos` ativa o Supabase APENAS nos consumidores que passam pelo
-  // hook useTitulos (página Titulos: lista + TituloForm). Cobrancas,
+  // hook useTitulos (páginas Titulos: lista + TituloForm; e Cobrancas).
   // OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento leem
   // `mockTitulos` direto e NÃO mudam com esta flag — cada um migra quando
-  // operacoes/cobrancas/relatorios/documentos forem ligados (decisão da 2.3).
+  // operacoes/relatorios/documentos forem ligados (decisão da 2.3).
+  // Cobrancas migrada para useTitulos na 2.7. Esta flag agora controla também
+  // a página de cobranças.
   titulos: true,
   // Ligar `operacoes` ativa o Supabase APENAS nos consumidores que passam pelo
   // hook useOperacoes (página Operacoes: lista + KPIs; e OperacaoDetalhes:

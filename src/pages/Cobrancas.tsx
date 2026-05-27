@@ -53,7 +53,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { mockTitulos, Titulo } from "@/data/mockTitulos";
+import { Titulo } from "@/data/mockTitulos";
 import {
   cobrancasStore,
   EstadoCobranca,
@@ -66,9 +66,12 @@ import {
 } from "@/data/mockCobrancas";
 import { EstadoRecompraTitulo } from "@/data/mockRecompras";
 import { useRecompras } from "@/hooks/useRecompras";
+import { useTitulos } from "@/hooks/useTitulos";
 import { RecompraDialog } from "@/components/recompras/RecompraDialog";
 import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatBRL } from "@/lib/format";
 import { daysUntil, formatBR } from "@/lib/dateUtils";
 import { toast } from "sonner";
@@ -129,6 +132,7 @@ type TabKey = "a-vencer" | "vencidos" | "liquidados" | "historico";
 
 export default function Cobrancas() {
   const { eventos, estados } = useCobrancas();
+  const { titulos, isLoading, error } = useTitulos();
   const [tab, setTab] = useState<TabKey>("a-vencer");
   const [busca, setBusca] = useState("");
 
@@ -139,14 +143,14 @@ export default function Cobrancas() {
 
   // Constrói linhas combinando título + estado efetivo
   const linhas = useMemo(() => {
-    return mockTitulos
+    return titulos
       .filter((t) => t.status !== "Cancelado")
       .map((t) => ({
         titulo: t,
         estado: estadoEfetivo(t, estados[t.id]),
         dias: daysUntil(t.dataVencimento),
       }));
-  }, [estados]);
+  }, [titulos, estados]);
 
   const filtroBusca = (txt: string) => {
     const q = busca.trim().toLowerCase();
@@ -215,6 +219,17 @@ export default function Cobrancas() {
         </AlertDescription>
       </Alert>
 
+      {isLoading ? (
+        <LoadingState label="Carregando títulos..." />
+      ) : error ? (
+        <ErrorState
+          title="Não foi possível carregar"
+          description={
+            error instanceof Error ? error.message : "Erro inesperado."
+          }
+        />
+      ) : (
+        <>
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-3">
         <Kpi
@@ -307,6 +322,8 @@ export default function Cobrancas() {
           </Tabs>
         </CardContent>
       </Card>
+        </>
+      )}
 
       {/* Modal: Registrar contato */}
       <RegistrarContatoDialog

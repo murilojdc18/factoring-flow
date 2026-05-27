@@ -42,11 +42,11 @@ function traduzirErroTitulo(error: { code?: string; message: string }): Error {
  *   cedente/sacado são resolvidos por lookup contra useClientes/useSacados.
  *
  * ATENÇÃO: a flag `titulos` em dataSource.ts controla SOMENTE os consumidores
- * que passam por este hook — hoje a página Titulos (lista + TituloForm).
- * Cobrancas, OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento
+ * que passam por este hook — hoje as páginas Titulos (lista + TituloForm) e
+ * Cobrancas. OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento
  * ainda leem `mockTitulos` direto e NÃO são afetados pela flag; cada um migra
- * quando suas entidades (operacoes/cobrancas/relatorios/documentos) forem
- * ligadas. Decisão consciente da sub-tarefa 2.3 (espelha a 2.2).
+ * quando suas entidades (operacoes/relatorios/documentos) forem ligadas.
+ * Decisão consciente da sub-tarefa 2.3 (espelha a 2.2); Cobrancas ligada na 2.7.
  */
 export function useTitulos() {
   const enabled = isSupabaseEnabled("titulos");
