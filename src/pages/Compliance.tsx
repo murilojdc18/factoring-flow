@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import {
+  AlertOctagon,
   AlertTriangle,
   ClipboardCheck,
   History,
@@ -35,15 +36,17 @@ import { Badge } from "@/components/ui/badge";
 import { AnaliseDialog } from "@/components/compliance/AnaliseDialog";
 import { RiscoBadge } from "@/components/compliance/RiscoBadge";
 import {
-  alvosDisponiveis,
-  alvosSemAnalise,
   AnaliseCompliance,
   CHECKLIST_ONBOARDING,
   CHECKLIST_OPERACAO,
   EscopoAnalise,
   progressoChecklist,
-  useCompliance,
 } from "@/data/mockCompliance";
+import { useCompliance } from "@/hooks/useCompliance";
+import { useClientes } from "@/hooks/useClientes";
+import { useOperacoes } from "@/hooks/useOperacoes";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { formatBR } from "@/lib/dateUtils";
 
 function formatarDataHora(iso: string) {
@@ -55,23 +58,72 @@ function formatarDataHora(iso: string) {
 }
 
 export default function Compliance() {
-  const { analises, politicas } = useCompliance();
+  const {
+    analises,
+    politicas,
+    obterAnalisePorAlvo,
+    registrarAnalise,
+    isLoading: complianceLoading,
+    error,
+  } = useCompliance();
+  const { clientes, isLoading: clientesLoading } = useClientes();
+  const { operacoes, isLoading: operacoesLoading } = useOperacoes();
+  const carregando = complianceLoading || clientesLoading || operacoesLoading;
   const [escopo, setEscopo] = useState<EscopoAnalise>("Cliente");
   const [open, setOpen] = useState(false);
   const [editando, setEditando] = useState<AnaliseCompliance | undefined>();
   const [alvoInicial, setAlvoInicial] = useState<string | undefined>();
 
-  const semAnaliseClientes = alvosSemAnalise("Cliente");
-  const semAnaliseOperacoes = alvosSemAnalise("Operação");
+  // Alvos das fontes reais (correção 2.7): clientes/operações do Supabase.
+  const alvosCliente = useMemo(
+    () => clientes.map((c) => ({ id: c.id, nome: c.razaoSocial })),
+    [clientes],
+  );
+  const alvosOperacao = useMemo(
+    () =>
+      operacoes.map((o) => ({
+        id: o.id,
+        nome: `${o.numero} — ${o.cedenteNome}`,
+      })),
+    [operacoes],
+  );
+  const alvosDoEscopo = (esc: EscopoAnalise) =>
+    esc === "Cliente" ? alvosCliente : alvosOperacao;
 
-  const totalClientes = alvosDisponiveis("Cliente").length;
-  const totalOperacoes = alvosDisponiveis("Operação").length;
+  const semAnaliseClientes = alvosCliente.filter(
+    (t) => !obterAnalisePorAlvo("Cliente", t.id),
+  );
+  const semAnaliseOperacoes = alvosOperacao.filter(
+    (t) => !obterAnalisePorAlvo("Operação", t.id),
+  );
+
+  const totalClientes = alvosCliente.length;
+  const totalOperacoes = alvosOperacao.length;
+
+  // Enriquecimento (padrão 2.8): alvoNome derivado dos dados reais; fallback
+  // defensivo no nome do mock/"" se o alvo não estiver na lista carregada.
+  const analisesEnriquecidas = useMemo(() => {
+    const nomeCliente = new Map(clientes.map((c) => [c.id, c.razaoSocial]));
+    const nomeOperacao = new Map(
+      operacoes.map((o) => [o.id, `${o.numero} — ${o.cedenteNome}`]),
+    );
+    return analises.map((a) => ({
+      ...a,
+      alvoNome:
+        (a.escopo === "Cliente"
+          ? nomeCliente.get(a.alvoId)
+          : nomeOperacao.get(a.alvoId)) ??
+        a.alvoNome ??
+        "",
+    }));
+  }, [analises, clientes, operacoes]);
 
   const counts = useMemo(() => {
     return {
       Baixo: analises.filter((a) => a.nivelRisco === "Baixo").length,
       Médio: analises.filter((a) => a.nivelRisco === "Médio").length,
       Alto: analises.filter((a) => a.nivelRisco === "Alto").length,
+      Crítico: analises.filter((a) => a.nivelRisco === "Crítico").length,
     };
   }, [analises]);
 
@@ -96,8 +148,12 @@ export default function Compliance() {
     setOpen(true);
   };
 
-  const analisesCliente = analises.filter((a) => a.escopo === "Cliente");
-  const analisesOperacao = analises.filter((a) => a.escopo === "Operação");
+  const analisesCliente = analisesEnriquecidas.filter(
+    (a) => a.escopo === "Cliente",
+  );
+  const analisesOperacao = analisesEnriquecidas.filter(
+    (a) => a.escopo === "Operação",
+  );
 
   return (
     <div>
@@ -127,8 +183,19 @@ export default function Compliance() {
         </AlertDescription>
       </Alert>
 
+      {carregando ? (
+        <LoadingState label="Carregando compliance..." />
+      ) : error ? (
+        <ErrorState
+          title="Não foi possível carregar"
+          description={
+            error instanceof Error ? error.message : "Erro inesperado."
+          }
+        />
+      ) : (
+        <>
       {/* KPIs */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <KpiCard
           icon={<ShieldCheck className="h-4 w-4 text-success" />}
           titulo="Risco baixo"
@@ -143,6 +210,11 @@ export default function Compliance() {
           icon={<ShieldAlert className="h-4 w-4 text-destructive" />}
           titulo="Risco alto"
           valor={counts.Alto}
+        />
+        <KpiCard
+          icon={<AlertOctagon className="h-4 w-4 text-destructive" />}
+          titulo="Risco crítico"
+          valor={counts.Crítico}
         />
         <KpiCard
           icon={<AlertTriangle className="h-4 w-4 text-warning" />}
@@ -248,6 +320,8 @@ export default function Compliance() {
           </div>
         </TabsContent>
       </Tabs>
+        </>
+      )}
 
       <AnaliseDialog
         open={open}
@@ -258,6 +332,8 @@ export default function Compliance() {
         escopo={escopo}
         alvoIdInicial={alvoInicial}
         analiseExistente={editando}
+        registrarAnalise={registrarAnalise}
+        alvos={alvosDoEscopo(escopo)}
       />
     </div>
   );

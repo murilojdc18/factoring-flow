@@ -20,10 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  alvosDisponiveis,
   AnaliseCompliance,
   checklistDoEscopo,
-  complianceStore,
   EscopoAnalise,
   NIVEIS_RISCO,
   NivelRisco,
@@ -37,6 +35,8 @@ interface Props {
   escopo: EscopoAnalise;
   alvoIdInicial?: string;
   analiseExistente?: AnaliseCompliance;
+  registrarAnalise: (input: Partial<AnaliseCompliance>) => Promise<void>;
+  alvos: { id: string; nome: string }[];
 }
 
 export function AnaliseDialog({
@@ -45,9 +45,10 @@ export function AnaliseDialog({
   escopo,
   alvoIdInicial,
   analiseExistente,
+  registrarAnalise,
+  alvos,
 }: Props) {
   const itens = useMemo(() => checklistDoEscopo(escopo), [escopo]);
-  const alvos = useMemo(() => alvosDisponiveis(escopo), [escopo]);
 
   const [alvoId, setAlvoId] = useState<string>("");
   const [nivel, setNivel] = useState<NivelRisco>("Baixo");
@@ -89,7 +90,7 @@ export function AnaliseDialog({
     .filter((i) => i.obrigatorio)
     .filter((i) => !respostas.find((r) => r.itemId === i.id)?.conferido);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!alvoId) {
       toast.error(`Selecione um ${escopo.toLowerCase()}.`);
       return;
@@ -102,21 +103,26 @@ export function AnaliseDialog({
       toast.error("Justifique o nível de risco atribuído.");
       return;
     }
-    const alvoNome = alvos.find((a) => a.id === alvoId)?.nome ?? alvoId;
-    complianceStore.salvar({
-      escopo,
-      alvoId,
-      alvoNome,
-      nivelRisco: nivel,
-      justificativa: justificativa.trim(),
-      responsavel: responsavel.trim(),
-      respostas,
-      observacoes: observacoes.trim() || undefined,
-    });
-    toast.success("Análise registrada.", {
-      description: "Registro interno. Não substitui revisão jurídica.",
-    });
-    onOpenChange(false);
+    try {
+      // alvoNome NÃO é enviado: derivado no read (D5).
+      await registrarAnalise({
+        escopo,
+        alvoId,
+        nivelRisco: nivel,
+        justificativa: justificativa.trim(),
+        responsavel: responsavel.trim(),
+        respostas,
+        observacoes: observacoes.trim() || undefined,
+      });
+      toast.success("Análise registrada.", {
+        description: "Registro interno. Não substitui revisão jurídica.",
+      });
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Não foi possível registrar.",
+      );
+    }
   };
 
   return (
