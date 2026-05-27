@@ -1,3 +1,14 @@
+/**
+ * Status FINANCEIRO do título (7 valores). Espelha o enum `titulo_status` do
+ * banco — PORÉM o enum no Postgres tem 4 valores EXTRAS herdados do scaffolding
+ * inicial do Lovable, que são DEPRECATED / NÃO USAR:
+ *   "Em análise de recompra", "Recompra solicitada",
+ *   "Substituição solicitada", "Resolvido".
+ * O status de recompra NÃO mora no título: vive na tabela `recompras`, com enum
+ * próprio `recompra_status`, independente do status financeiro (decisão D3 da
+ * 2.6). Os órfãos não foram removidos porque excluir valor de enum no Postgres é
+ * custoso/destrutivo. Ver docs/plano-2.6.md.
+ */
 export type TituloStatus =
   | "Disponível"
   | "Em análise"

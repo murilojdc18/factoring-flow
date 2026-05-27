@@ -51,6 +51,9 @@ export function rowToTitulo(row: TituloRow, lookup?: NameLookup): Titulo {
     numeroNotaFiscal: row.numero_nota_fiscal ?? "",
     chaveNotaFiscal: row.chave_nota_fiscal ?? "",
     descricao: row.descricao ?? "",
+    // O enum titulo_status do banco tem 4 valores de recompra órfãos/deprecated
+    // (ver mockTitulos.ts / docs/plano-2.6.md) que o front nunca grava. Cast
+    // seguro para os 7 status financeiros; status de recompra mora em `recompras`.
     status: (row.status as TituloStatus) ?? "Disponível",
     observacoes: row.observacoes ?? "",
     anexos,
