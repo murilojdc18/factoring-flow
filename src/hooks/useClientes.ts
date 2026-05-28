@@ -28,12 +28,12 @@ function traduzirErroCliente(error: { code?: string; message: string }): Error {
  * - Modo mock: estado local (mesma semântica anterior).
  * - Modo Supabase: TanStack Query + supabase.from("clientes").
  *
- * ATENÇÃO: a flag `clientes` em dataSource.ts controla SOMENTE os consumidores
- * que passam por este hook — hoje a página Clientes e o lookup de cedente em
- * Titulos. OperacaoSimulador, Relatorios, OperacaoDetalhes, TituloForm e
- * preencherDocumento ainda importam `mockClientes` direto e NÃO são afetados
- * pela flag; cada um migra quando suas entidades (titulos/operacoes) forem
- * ligadas. Decisão consciente da sub-tarefa 2.1.
+ * Todos os consumidores de clientes hoje passam por este hook: Clientes,
+ * Titulos (lista + TituloForm), Operacoes, OperacaoDetalhes, OperacaoSimulador,
+ * GerarDocumentoDialog e Relatorios (migrado na 2.5.3). useTitulos e
+ * useOperacoes também consomem este hook internamente para resolver
+ * cedenteNome via lookup. `preencherDocumento.ts` recebe o cedente por
+ * parâmetro (função pura).
  */
 export function useClientes() {
   const enabled = isSupabaseEnabled("clientes");

@@ -29,12 +29,11 @@ function traduzirErroSacado(error: { code?: string; message: string }): Error {
  * - Modo mock: estado local (mesma semântica anterior).
  * - Modo Supabase: TanStack Query + supabase.from("sacados").
  *
- * ATENÇÃO: a flag `sacados` em dataSource.ts controla SOMENTE os consumidores
- * que passam por este hook — hoje a página Sacados e o filtro de sacado em
- * Titulos. TituloForm, Relatorios e preencherDocumento ainda importam
- * `mockSacados` direto e NÃO são afetados pela flag; cada um migra quando suas
- * entidades (titulos/relatorios/documentos) forem ligadas. Decisão consciente
- * da sub-tarefa 2.2 (espelha a 2.1).
+ * Todos os consumidores de sacados hoje passam por este hook: Sacados,
+ * Titulos (lista + TituloForm), GerarDocumentoDialog e Relatorios (migrado
+ * na 2.5.3). useTitulos também consome este hook internamente para resolver
+ * sacadoNome via lookup. `preencherDocumento.ts` recebe os sacados por
+ * parâmetro (função pura).
  */
 export function useSacados() {
   const enabled = isSupabaseEnabled("sacados");

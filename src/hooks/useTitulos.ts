@@ -41,13 +41,11 @@ function traduzirErroTitulo(error: { code?: string; message: string }): Error {
  * - Modo Supabase: TanStack Query + supabase.from("titulos"). Os nomes de
  *   cedente/sacado são resolvidos por lookup contra useClientes/useSacados.
  *
- * ATENÇÃO: a flag `titulos` em dataSource.ts controla SOMENTE os consumidores
- * que passam por este hook — hoje as páginas Titulos (lista + TituloForm) e
- * Cobrancas. OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento
- * ainda leem `mockTitulos` direto e NÃO são afetados pela flag; cada um migra
- * quando suas entidades (operacoes/relatorios/documentos) forem ligadas.
- * Decisão consciente da sub-tarefa 2.3 (espelha a 2.2). Cobrancas lê títulos por
- * aqui desde a 2.7; seus eventos/estado de cobrança migraram via useCobrancas na
+ * Todos os consumidores de títulos hoje passam por este hook: Titulos
+ * (lista + TituloForm), Cobrancas, OperacaoDetalhes, OperacaoSimulador,
+ * GerarDocumentoDialog e Relatorios (migrado na 2.5.3). `preencherDocumento.ts`
+ * recebe os títulos por parâmetro (função pura). Cobrancas lê títulos por aqui
+ * desde a 2.7; seus eventos/estado de cobrança migraram via useCobrancas na
  * 2.8 (flag `cobrancas`).
  */
 export function useTitulos() {

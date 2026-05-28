@@ -13,33 +13,31 @@
  */
 export const USE_SUPABASE = {
   configuracoes: false,
-  // Ligar `clientes` ativa o Supabase APENAS nos consumidores que passam pelo
-  // hook useClientes (página Clientes e lookup de cedente em Titulos).
-  // OperacaoSimulador, Relatorios, OperacaoDetalhes e preencherDocumento leem
-  // `mockClientes` direto e NÃO mudam com esta flag —
-  // cada um migra quando titulos/operacoes forem ligadas (decisão da 2.1).
+  // Ligar `clientes` ativa o Supabase em todos os consumidores que passam pelo
+  // hook useClientes (páginas Clientes, Titulos, Operacoes, OperacaoDetalhes,
+  // OperacaoSimulador, GerarDocumentoDialog, Relatorios; também é dependência
+  // interna de useTitulos/useOperacoes para resolver cedenteNome). A única
+  // função que ainda toca `Cliente` como tipo é `preencherDocumento.ts`, que
+  // é pura e recebe o cedente por parâmetro — não bypassa esta flag.
   clientes: true,
-  // Ligar `sacados` ativa o Supabase APENAS nos consumidores que passam pelo
-  // hook useSacados (página Sacados e filtro de sacado em Titulos).
-  // Relatorios e preencherDocumento leem `mockSacados` direto e NÃO mudam com
-  // esta flag — cada um migra quando titulos/relatorios/documentos forem
-  // ligados (decisão da 2.2).
+  // Ligar `sacados` ativa o Supabase em todos os consumidores que passam pelo
+  // hook useSacados (páginas Sacados, Titulos, GerarDocumentoDialog,
+  // Relatorios; também é dependência interna de useTitulos para resolver
+  // sacadoNome). `preencherDocumento.ts` recebe os sacados por parâmetro
+  // (função pura) — não bypassa esta flag.
   sacados: true,
-  // Ligar `titulos` ativa o Supabase APENAS nos consumidores que passam pelo
-  // hook useTitulos (páginas Titulos: lista + TituloForm; e Cobrancas).
-  // OperacaoDetalhes, OperacaoSimulador, Relatorios e preencherDocumento leem
-  // `mockTitulos` direto e NÃO mudam com esta flag — cada um migra quando
-  // operacoes/relatorios/documentos forem ligados (decisão da 2.3).
-  // Cobrancas migrada para useTitulos na 2.7. Esta flag agora controla também
-  // a página de cobranças.
+  // Ligar `titulos` ativa o Supabase em todos os consumidores que passam pelo
+  // hook useTitulos (páginas Titulos: lista + TituloForm; Cobrancas;
+  // OperacaoDetalhes; OperacaoSimulador; GerarDocumentoDialog; Relatorios).
+  // `preencherDocumento.ts` recebe os títulos por parâmetro (função pura) —
+  // não bypassa esta flag.
   titulos: true,
-  // Ligar `operacoes` ativa o Supabase APENAS nos consumidores que passam pelo
-  // hook useOperacoes (página Operacoes: lista + KPIs; e OperacaoDetalhes:
-  // leitura da operação/títulos/histórico). Relatorios,
-  // GerarDocumentoDialog/preencherDocumento e Compliance leem `mockOperacoes`
-  // direto e NÃO mudam com esta flag — cada um migra quando sua entidade
-  // (relatorios/documentos/compliance) for ligada. A criação de operação
-  // (escrita atômica via RPC) é a sub-tarefa 2.4b. Decisão da 2.4a.
+  // Ligar `operacoes` ativa o Supabase em todos os consumidores que passam pelo
+  // hook useOperacoes (páginas Operacoes, OperacaoDetalhes, OperacaoSimulador,
+  // GerarDocumentoDialog, Relatorios). `preencherDocumento.ts` recebe a
+  // operação por parâmetro (função pura) — não bypassa esta flag. Compliance
+  // tem flag própria e usa seed estático em mockCompliance.ts. A criação de
+  // operação (escrita atômica via RPC) foi entregue na 2.4b.
   operacoes: true,
   // Ligar `modelos_documentos` ativa o Supabase APENAS nos consumidores que
   // passam pelo hook useModelosDocumento (página Contratos: leitura dos modelos;

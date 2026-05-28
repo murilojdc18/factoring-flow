@@ -74,11 +74,11 @@ function traduzirErroOperacao(error: {
  * tabela `profiles`; em 2.4a a tabela `operacoes` está vazia (sem histórico
  * para resolver), então o lookup de responsáveis fica de fora por ora.
  *
- * ATENÇÃO: a flag `operacoes` em dataSource.ts controla SOMENTE os consumidores
- * que passam por este hook — a página Operacoes (lista) e OperacaoDetalhes
- * (leitura). Relatorios, GerarDocumentoDialog/preencherDocumento e Compliance
- * ainda leem `mockOperacoes` direto e NÃO são afetados pela flag; cada um migra
- * quando suas entidades forem ligadas. Decisão consciente da 2.4 (espelha a 2.3).
+ * Todos os consumidores de operações hoje passam por este hook: Operacoes,
+ * OperacaoDetalhes, OperacaoSimulador, GerarDocumentoDialog e Relatorios
+ * (migrado na 2.5.3). `preencherDocumento.ts` recebe a operação por
+ * parâmetro (função pura). Compliance tem flag própria e usa seed estático
+ * em mockCompliance.ts.
  */
 export function useOperacoes() {
   const enabled = isSupabaseEnabled("operacoes");
