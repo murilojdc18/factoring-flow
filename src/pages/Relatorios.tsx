@@ -71,22 +71,14 @@ import { mockSacados } from "@/data/mockSacados";
 import { useDocumentosGerados } from "@/hooks/useDocumentosGerados";
 
 import { formatBRL, formatNumber } from "@/lib/format";
-import { dateToISO, daysUntil, formatBR, parseISO } from "@/lib/dateUtils";
+import { daysUntil, formatBR, parseISO } from "@/lib/dateUtils";
 import { exportarCsv } from "@/lib/exportarCsv";
 import { exportarRelatorioPdf } from "@/lib/exportarRelatorioPdf";
+import {
+  montarResumoFiltros,
+  type Filtros,
+} from "@/lib/relatoriosFiltros";
 import { toast } from "sonner";
-
-/* =============================== Types =============================== */
-
-interface Filtros {
-  inicio?: Date;
-  fim?: Date;
-  cedenteId: string; // "" = todos
-  sacadoId: string;
-  statusOperacao: string; // "" = todos
-  tipoTitulo: string;
-  responsavel: string;
-}
 
 const RELATORIOS = [
   { id: "carteira", label: "Carteira por status" },
@@ -189,7 +181,7 @@ export default function Relatorios() {
     0,
   );
 
-  const filtrosResumo = montarResumoFiltros(filtros);
+  const filtrosResumo = montarResumoFiltros(filtros, mockClientes, mockSacados);
 
   return (
     <div className="space-y-6">
@@ -403,20 +395,6 @@ function endOfDay(d: Date) {
   const x = new Date(d);
   x.setHours(23, 59, 59, 999);
   return x;
-}
-
-function montarResumoFiltros(f: Filtros): string {
-  const partes: string[] = [];
-  if (f.inicio) partes.push(`início ${formatBR(dateToISO(f.inicio))}`);
-  if (f.fim) partes.push(`fim ${formatBR(dateToISO(f.fim))}`);
-  if (f.cedenteId)
-    partes.push(`cedente ${mockClientes.find((c) => c.id === f.cedenteId)?.razaoSocial ?? f.cedenteId}`);
-  if (f.sacadoId)
-    partes.push(`sacado ${mockSacados.find((s) => s.id === f.sacadoId)?.nome ?? f.sacadoId}`);
-  if (f.statusOperacao) partes.push(`status ${f.statusOperacao}`);
-  if (f.tipoTitulo) partes.push(`tipo ${f.tipoTitulo}`);
-  if (f.responsavel) partes.push(`resp. ${f.responsavel}`);
-  return partes.length ? partes.join(" • ") : "Sem filtros aplicados";
 }
 
 /* =============================== Subcomponentes =============================== */
