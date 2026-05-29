@@ -24,11 +24,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import {
-  alvosDisponiveis,
-  alvosSemAnalise,
-  useCompliance,
-} from "@/data/mockCompliance";
+import { useCompliance } from "@/data/mockCompliance";
+import { useClientes } from "@/hooks/useClientes";
+import { useOperacoes } from "@/hooks/useOperacoes";
 import { RiscoBadge } from "@/components/compliance/RiscoBadge";
 import {
   PARAMETROS_DEFAULT as DEFAULTS,
@@ -42,11 +40,17 @@ export default function Configuracoes() {
   useEffect(() => {
     setParams(salvo);
   }, [salvo]);
-  const { politicas, analises } = useCompliance();
-  const semClientes = alvosSemAnalise("Cliente").length;
-  const semOps = alvosSemAnalise("Operação").length;
-  const totalClientes = alvosDisponiveis("Cliente").length;
-  const totalOps = alvosDisponiveis("Operação").length;
+  const { politicas, analises, obterAnalisePorAlvo } = useCompliance();
+  const { clientes } = useClientes();
+  const { operacoes } = useOperacoes();
+  const totalClientes = clientes.length;
+  const totalOps = operacoes.length;
+  const semClientes = clientes.filter(
+    (c) => !obterAnalisePorAlvo("Cliente", c.id),
+  ).length;
+  const semOps = operacoes.filter(
+    (o) => !obterAnalisePorAlvo("Operação", o.id),
+  ).length;
   const altos = analises.filter((a) => a.nivelRisco === "Alto").length;
   const medios = analises.filter((a) => a.nivelRisco === "Médio").length;
   const baixos = analises.filter((a) => a.nivelRisco === "Baixo").length;
