@@ -33,6 +33,11 @@ import {
   type ParametrosFinanceiros,
   useConfiguracoes,
 } from "@/hooks/useConfiguracoes";
+import {
+  type DadosEmpresa,
+  useDadosEmpresa,
+} from "@/hooks/useDadosEmpresa";
+import { Building2 } from "lucide-react";
 
 export default function Configuracoes() {
   const { params: salvo, isLoading, isSaving, save, source } = useConfiguracoes();
@@ -40,6 +45,15 @@ export default function Configuracoes() {
   useEffect(() => {
     setParams(salvo);
   }, [salvo]);
+  const {
+    dados: empresaSalvo,
+    isSaving: isSavingEmpresa,
+    save: saveEmpresa,
+  } = useDadosEmpresa();
+  const [empresa, setEmpresa] = useState<DadosEmpresa>(empresaSalvo);
+  useEffect(() => {
+    setEmpresa(empresaSalvo);
+  }, [empresaSalvo]);
   const { politicas, analises, obterAnalisePorAlvo } = useCompliance();
   const { clientes } = useClientes();
   const { operacoes } = useOperacoes();
@@ -84,6 +98,25 @@ export default function Configuracoes() {
   const handleResetar = () => {
     setParams(DEFAULTS);
     toast.info("Valores restaurados para o padrão.");
+  };
+
+  const updateEmpresa = <K extends keyof DadosEmpresa>(
+    key: K,
+    value: DadosEmpresa[K],
+  ) => setEmpresa((e) => ({ ...e, [key]: value }));
+
+  const empresaDirty =
+    JSON.stringify(empresa) !== JSON.stringify(empresaSalvo);
+
+  const handleSalvarEmpresa = async () => {
+    try {
+      await saveEmpresa(empresa);
+      toast.success("Dados da empresa salvos.");
+    } catch (e) {
+      toast.error("Não foi possível salvar os dados da empresa.", {
+        description: e instanceof Error ? e.message : "Erro desconhecido.",
+      });
+    }
   };
 
   const dirty = JSON.stringify(params) !== JSON.stringify(salvo);
@@ -260,6 +293,63 @@ export default function Configuracoes() {
           Existem alterações não salvas.
         </p>
       )}
+
+      {/* ============= Dados da empresa ============= */}
+      <Card className="mt-6 shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-primary" />
+            Dados da empresa
+          </CardTitle>
+          <CardDescription>
+            Razão social, CNPJ e endereço usados nos documentos gerados
+            (contratos, borderôs, recibos) e no cabeçalho dos PDFs.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Razão social">
+              <Input
+                value={empresa.razaoSocial}
+                onChange={(e) => updateEmpresa("razaoSocial", e.target.value)}
+              />
+            </Field>
+            <Field label="CNPJ">
+              <Input
+                value={empresa.cnpj}
+                onChange={(e) => updateEmpresa("cnpj", e.target.value)}
+              />
+            </Field>
+            <Field label="Cidade (foro/assinatura)">
+              <Input
+                value={empresa.cidade}
+                onChange={(e) => updateEmpresa("cidade", e.target.value)}
+              />
+            </Field>
+            <Field label="Endereço completo">
+              <Input
+                value={empresa.endereco}
+                onChange={(e) => updateEmpresa("endereco", e.target.value)}
+              />
+            </Field>
+          </div>
+          <div className="flex items-center justify-end gap-3">
+            {empresaDirty && (
+              <span className="text-sm text-warning-foreground">
+                Alterações não salvas.
+              </span>
+            )}
+            <Button
+              onClick={handleSalvarEmpresa}
+              disabled={!empresaDirty || isSavingEmpresa}
+              variant="outline"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {isSavingEmpresa ? "Salvando..." : "Salvar dados da empresa"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ============= Compliance ============= */}
       <Card className="mt-6 shadow-card">

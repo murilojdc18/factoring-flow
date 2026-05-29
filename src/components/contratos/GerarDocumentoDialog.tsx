@@ -26,6 +26,7 @@ import { useClientes } from "@/hooks/useClientes";
 import { useTitulos } from "@/hooks/useTitulos";
 import { useSacados } from "@/hooks/useSacados";
 import { useDocumentosGerados } from "@/hooks/useDocumentosGerados";
+import { useDadosEmpresa } from "@/hooks/useDadosEmpresa";
 import { toast } from "sonner";
 import {
   DocumentoGerado,
@@ -68,6 +69,7 @@ export function GerarDocumentoDialog({
   const { titulos } = useTitulos();
   const { sacados } = useSacados();
   const { create } = useDocumentosGerados();
+  const { dados: empresa } = useDadosEmpresa();
   const [tipo, setTipo] = useState<TipoGeravel>(
     initialTipo ?? "Contrato de cessão de direitos creditórios",
   );
@@ -121,6 +123,7 @@ export function GerarDocumentoDialog({
       cedente,
       titulosDaOperacao,
       sacados,
+      empresa,
     );
     const texto = preencherTexto(modeloSelecionado.texto, valores);
     setTextoFinal(texto);

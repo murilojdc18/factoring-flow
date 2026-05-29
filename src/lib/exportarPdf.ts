@@ -2,12 +2,6 @@ import jsPDF from "jspdf";
 import { DocumentoGerado } from "@/data/mockDocumentosGerados";
 import { formatBR } from "@/lib/dateUtils";
 
-/**
- * Constantes da empresa de factoring para cabeçalho do PDF.
- * Mock — em produção viria de Configurações.
- */
-const EMPRESA_FACTORING_NOME = "FactorPro Fomento Mercantil LTDA";
-
 const AVISO_PROFORMA =
   "Documento proforma gerado automaticamente. Revisão jurídica obrigatória antes de assinatura ou uso externo.";
 
@@ -29,9 +23,13 @@ export function sugerirNomeArquivo(doc: DocumentoGerado): string {
 
 /**
  * Exporta um DocumentoGerado em PDF A4 com cabeçalho, rodapé e fonte
- * monoespaçada (preserva tabelas ASCII e quebras de linha).
+ * monoespaçada (preserva tabelas ASCII e quebras de linha). O nome da empresa
+ * (cabeçalho) chega por parâmetro, vindo de useDadosEmpresa.
  */
-export function exportarDocumentoPdf(doc: DocumentoGerado): void {
+export function exportarDocumentoPdf(
+  doc: DocumentoGerado,
+  empresaNome: string,
+): void {
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -66,7 +64,7 @@ export function exportarDocumentoPdf(doc: DocumentoGerado): void {
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(11);
     pdf.setTextColor(20, 20, 20);
-    pdf.text(EMPRESA_FACTORING_NOME, marginX, 12);
+    pdf.text(empresaNome, marginX, 12);
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
     pdf.setTextColor(90, 90, 90);

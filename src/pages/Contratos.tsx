@@ -59,6 +59,7 @@ import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialo
 import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { exportarDocumentoPdf } from "@/lib/exportarPdf";
 import { useDocumentosGerados } from "@/hooks/useDocumentosGerados";
+import { useDadosEmpresa } from "@/hooks/useDadosEmpresa";
 
 type ModalState =
   | { tipo: "fechado" }
@@ -79,6 +80,7 @@ export default function Contratos() {
   } = useDocumentosGerados();
   const [gerarOpen, setGerarOpen] = useState(false);
   const [docPreview, setDocPreview] = useState<DocumentoGerado | null>(null);
+  const { dados: empresa } = useDadosEmpresa();
 
   const handleSalvarDocumento = (doc: DocumentoGerado) => {
     setGerarOpen(false);
@@ -339,7 +341,7 @@ export default function Contratos() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            exportarDocumentoPdf(d);
+                            exportarDocumentoPdf(d, empresa.razaoSocial);
                             toast.success("PDF gerado para download.");
                           }}
                           title="Exportar PDF"
@@ -477,7 +479,7 @@ export default function Contratos() {
                 </Button>
                 <Button
                   onClick={() => {
-                    exportarDocumentoPdf(docPreview);
+                    exportarDocumentoPdf(docPreview, empresa.razaoSocial);
                     toast.success("PDF gerado para download.");
                   }}
                 >
