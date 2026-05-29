@@ -12,7 +12,7 @@
  *   permanece idêntico ao dos mocks.
  */
 export const USE_SUPABASE = {
-  configuracoes: false,
+  configuracoes: true,
   // Ligar `clientes` ativa o Supabase em todos os consumidores que passam pelo
   // hook useClientes (páginas Clientes, Titulos, Operacoes, OperacaoDetalhes,
   // OperacaoSimulador, GerarDocumentoDialog, Relatorios; também é dependência
