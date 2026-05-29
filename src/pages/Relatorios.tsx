@@ -59,16 +59,15 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
-import { mockOperacoes, STATUS_OPERACAO } from "@/data/mockOperacoes";
-import {
-  mockTitulos,
-  STATUS_TITULO,
-  TIPOS_TITULO,
-  Titulo,
-} from "@/data/mockTitulos";
-import { mockClientes } from "@/data/mockClientes";
-import { mockSacados } from "@/data/mockSacados";
+import { STATUS_OPERACAO, type Operacao } from "@/data/mockOperacoes";
+import { STATUS_TITULO, TIPOS_TITULO, type Titulo } from "@/data/mockTitulos";
+import { useClientes } from "@/hooks/useClientes";
+import { useSacados } from "@/hooks/useSacados";
+import { useTitulos } from "@/hooks/useTitulos";
+import { useOperacoes } from "@/hooks/useOperacoes";
 import { useDocumentosGerados } from "@/hooks/useDocumentosGerados";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 
 import { formatBRL, formatNumber } from "@/lib/format";
 import { daysUntil, formatBR, parseISO } from "@/lib/dateUtils";
@@ -108,6 +107,26 @@ const CHART_COLORS = [
 /* =============================== Page =============================== */
 
 export default function Relatorios() {
+  const {
+    clientes,
+    isLoading: isLoadingClientes,
+    error: errorClientes,
+  } = useClientes();
+  const {
+    sacados,
+    isLoading: isLoadingSacados,
+    error: errorSacados,
+  } = useSacados();
+  const {
+    titulos,
+    isLoading: isLoadingTitulos,
+    error: errorTitulos,
+  } = useTitulos();
+  const {
+    operacoes,
+    isLoading: isLoadingOperacoes,
+    error: errorOperacoes,
+  } = useOperacoes();
   const { documentos } = useDocumentosGerados();
 
   const [filtros, setFiltros] = useState<Filtros>({
@@ -119,10 +138,22 @@ export default function Relatorios() {
   });
   const [aba, setAba] = useState<RelatorioId>("carteira");
 
+  // Qualquer fonte crítica carregando mantém o LoadingState (espelha
+  // OperacaoDetalhes L131-137). cedenteNome/sacadoNome dependem do lookup
+  // clientes+sacados nos mappers de titulo/operacao — exibir relatórios
+  // antes deles terminarem mostraria nomes vazios.
+  const isLoading =
+    isLoadingClientes ||
+    isLoadingSacados ||
+    isLoadingTitulos ||
+    isLoadingOperacoes;
+  const error =
+    errorClientes ?? errorSacados ?? errorTitulos ?? errorOperacoes;
+
   const responsaveis = useMemo(
     () =>
-      Array.from(new Set(mockOperacoes.map((o) => o.responsavelInterno))).sort(),
-    [],
+      Array.from(new Set(operacoes.map((o) => o.responsavelInterno))).sort(),
+    [operacoes],
   );
 
   const dentroPeriodo = (iso: string) => {
@@ -135,7 +166,7 @@ export default function Relatorios() {
 
   /* ------- Dados filtrados ------- */
   const titulosFiltrados = useMemo(() => {
-    return mockTitulos.filter((t) => {
+    return titulos.filter((t) => {
       if (filtros.cedenteId && t.cedenteId !== filtros.cedenteId) return false;
       if (filtros.sacadoId && t.sacadoId !== filtros.sacadoId) return false;
       if (filtros.tipoTitulo && t.tipo !== filtros.tipoTitulo) return false;
@@ -145,10 +176,10 @@ export default function Relatorios() {
       }
       return true;
     });
-  }, [filtros]);
+  }, [filtros, titulos]);
 
   const operacoesFiltradas = useMemo(() => {
-    return mockOperacoes.filter((o) => {
+    return operacoes.filter((o) => {
       if (filtros.cedenteId && o.cedenteId !== filtros.cedenteId) return false;
       if (filtros.statusOperacao && o.status !== filtros.statusOperacao) return false;
       if (filtros.responsavel && o.responsavelInterno !== filtros.responsavel) return false;
@@ -157,7 +188,7 @@ export default function Relatorios() {
       }
       return true;
     });
-  }, [filtros]);
+  }, [filtros, operacoes]);
 
   const documentosFiltrados = useMemo(() => {
     return documentos.filter((d) => {
@@ -181,7 +212,39 @@ export default function Relatorios() {
     0,
   );
 
-  const filtrosResumo = montarResumoFiltros(filtros, mockClientes, mockSacados);
+  const filtrosResumo = useMemo(
+    () => montarResumoFiltros(filtros, clientes, sacados),
+    [filtros, clientes, sacados],
+  );
+
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader
+          title="Relatórios"
+          description="Visão gerencial de carteira, operações, exposição e documentos."
+        />
+        <LoadingState label="Carregando relatórios..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <PageHeader
+          title="Relatórios"
+          description="Visão gerencial de carteira, operações, exposição e documentos."
+        />
+        <ErrorState
+          title="Não foi possível carregar"
+          description={
+            error instanceof Error ? error.message : "Erro inesperado."
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -225,13 +288,13 @@ export default function Relatorios() {
               label="Cedente"
               value={filtros.cedenteId}
               onChange={(v) => setFiltros((f) => ({ ...f, cedenteId: v }))}
-              options={mockClientes.map((c) => ({ value: c.id, label: c.razaoSocial }))}
+              options={clientes.map((c) => ({ value: c.id, label: c.razaoSocial }))}
             />
             <SelectField
               label="Sacado"
               value={filtros.sacadoId}
               onChange={(v) => setFiltros((f) => ({ ...f, sacadoId: v }))}
-              options={mockSacados.map((s) => ({ value: s.id, label: s.nome }))}
+              options={sacados.map((s) => ({ value: s.id, label: s.nome }))}
             />
             <SelectField
               label="Status operação"
@@ -691,7 +754,7 @@ function OperacoesPeriodo({
   operacoes,
   filtrosResumo,
 }: {
-  operacoes: typeof mockOperacoes;
+  operacoes: Operacao[];
   filtrosResumo: string;
 }) {
   if (operacoes.length === 0) return <Empty msg="Nenhuma operação no recorte." />;
@@ -781,7 +844,7 @@ function Rentabilidade({
   operacoes,
   filtrosResumo,
 }: {
-  operacoes: typeof mockOperacoes;
+  operacoes: Operacao[];
   filtrosResumo: string;
 }) {
   if (operacoes.length === 0) return <Empty msg="Nenhuma operação no recorte." />;
