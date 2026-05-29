@@ -43,7 +43,7 @@ export function AnexosSection({
   const podeEnviar =
     !!user &&
     roles.some((r) =>
-      ["administrador", "operacional", "financeiro", "compliance", "cobranca"].includes(r),
+      ["administrador", "operacional", "financeiro", "compliance", "cobranca", "diretoria"].includes(r),
     );
   const isAdmin = roles.includes("administrador");
 
