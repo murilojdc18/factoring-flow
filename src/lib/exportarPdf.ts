@@ -16,6 +16,7 @@ export function sugerirNomeArquivo(doc: DocumentoGerado): string {
     if (t.includes("aditivo")) return "aditivo";
     if (t.includes("borderô") || t.includes("bordero")) return "bordero";
     if (t.includes("master")) return "contrato-master";
+    if (t.includes("recibo")) return "recibo";
     return "documento";
   })();
   return `${slug}-operacao-${op}.pdf`;

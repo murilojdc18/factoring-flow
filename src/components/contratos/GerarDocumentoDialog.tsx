@@ -43,6 +43,7 @@ const TIPOS_GERAVEIS = [
   "Contrato de cessão de direitos creditórios",
   "Aditivo de operação",
   "Borderô de títulos",
+  "Recibo de pagamento",
 ] as const;
 type TipoGeravel = (typeof TIPOS_GERAVEIS)[number];
 

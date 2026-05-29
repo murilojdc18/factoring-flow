@@ -4,7 +4,8 @@ export type ContratoTipo =
   | "Aditivo de operação"
   | "Borderô de títulos"
   | "Termo de recompra"
-  | "Notificação ao sacado";
+  | "Notificação ao sacado"
+  | "Recibo de pagamento";
 
 export type ContratoStatus = "Rascunho" | "Ativo" | "Inativo";
 
@@ -26,6 +27,7 @@ export const TIPOS_CONTRATO: ContratoTipo[] = [
   "Borderô de títulos",
   "Termo de recompra",
   "Notificação ao sacado",
+  "Recibo de pagamento",
 ];
 
 export const STATUS_CONTRATO: ContratoStatus[] = ["Rascunho", "Ativo", "Inativo"];
@@ -432,5 +434,34 @@ Pagamentos referentes aos títulos abaixo deverão ser efetuados diretamente à 
 
 {{cidade_assinatura}}, {{data_assinatura}}.`,
     observacoes: "Modelo descontinuado — substituído pela versão 2.0 (em elaboração).",
+  },
+  {
+    id: "MOD-007",
+    nome: "Recibo de pagamento",
+    tipo: "Recibo de pagamento",
+    versao: "1",
+    status: "Ativo",
+    atualizadoEm: today,
+    texto: `>>> RECIBO PROFORMA — sujeito a revisão jurídica. Não constitui quitação definitiva nem comprovante fiscal. <<<
+
+RECIBO DE PAGAMENTO
+
+Referente à operação nº {{operacao_numero}}, de {{operacao_data}}.
+
+{{empresa_factoring_razao_social}}, inscrita no CNPJ sob o nº {{empresa_factoring_cnpj}}, com sede em {{empresa_factoring_endereco}}, DECLARA que efetuou o pagamento do valor líquido de {{valor_liquido}} à CEDENTE {{cedente_razao_social}}, inscrita no CNPJ sob o nº {{cedente_cnpj}}, referente à aquisição dos direitos creditórios da operação acima identificada.
+
+A CEDENTE dá quitação do valor líquido ora recebido, ressalvadas as obrigações de recompra/substituição e as demais condições pactuadas no contrato e no respectivo borderô.
+
+{{cidade_assinatura}}, {{data_assinatura}}.
+
+_________________________________________
+{{empresa_factoring_razao_social}}
+CNPJ {{empresa_factoring_cnpj}}
+
+_________________________________________
+{{cedente_razao_social}}
+CNPJ {{cedente_cnpj}}`,
+    observacoes:
+      "Recibo proforma do valor líquido pago ao cedente. Sujeito a revisão jurídica.",
   },
 ];
