@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   ShieldCheck,
+  History,
   LucideIcon,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -42,6 +43,7 @@ const mainItems: NavItem[] = [
 const systemItems: NavItem[] = [
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, area: "relatorios" },
   { title: "Compliance", url: "/compliance", icon: ShieldCheck, area: "compliance" },
+  { title: "Auditoria", url: "/auditoria", icon: History, area: "auditoria" },
   { title: "Configurações", url: "/configuracoes", icon: Settings, area: "configuracoes" },
 ];
 

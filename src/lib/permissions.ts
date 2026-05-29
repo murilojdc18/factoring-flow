@@ -23,7 +23,8 @@ export type AppArea =
   | "cobrancas"
   | "relatorios"
   | "configuracoes"
-  | "compliance";
+  | "compliance"
+  | "auditoria";
 
 /** Ações possíveis em um módulo. */
 export type AppAction =
@@ -51,6 +52,7 @@ const MATRIX: Record<AppRole, Partial<Record<AppArea, AppAction[]>>> = {
     relatorios: ["view", "export"],
     cobrancas: ["view"],
     compliance: ["view"],
+    auditoria: ["view"],
   },
 
   operacional: {
@@ -116,6 +118,7 @@ function allAreasAllActions(): Record<AppArea, AppAction[]> {
     "relatorios",
     "configuracoes",
     "compliance",
+    "auditoria",
   ];
   const actions: AppAction[] = [
     "view",

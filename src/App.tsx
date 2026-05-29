@@ -18,6 +18,7 @@ import Contratos from "./pages/Contratos";
 import Cobrancas from "./pages/Cobrancas";
 import Relatorios from "./pages/Relatorios";
 import Compliance from "./pages/Compliance";
+import AuditoriaLog from "./pages/AuditoriaLog";
 import Auth from "./pages/Auth";
 import SemAcesso from "./pages/SemAcesso";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -68,6 +69,9 @@ const App = () => (
                 </Route>
                 <Route element={<ProtectedRoute area="compliance" />}>
                   <Route path="/compliance" element={<Compliance />} />
+                </Route>
+                <Route element={<ProtectedRoute area="auditoria" />}>
+                  <Route path="/auditoria" element={<AuditoriaLog />} />
                 </Route>
                 <Route element={<ProtectedRoute area="configuracoes" />}>
                   <Route path="/configuracoes" element={<Configuracoes />} />
