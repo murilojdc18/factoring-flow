@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowUpRight,
   Wallet,
@@ -33,130 +35,166 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
 
-/* ---------- Mock data ---------- */
-
-const kpis = [
-  {
-    label: "Valor total em carteira",
-    value: "R$ 12.480.300",
-    delta: "+4,2% vs. mês anterior",
-    icon: Wallet,
-    tone: "primary" as const,
-  },
-  {
-    label: "Total a vencer",
-    value: "R$ 9.815.420",
-    delta: "1.142 títulos",
-    icon: CalendarClock,
-    tone: "success" as const,
-  },
-  {
-    label: "Total vencido",
-    value: "R$ 348.760",
-    delta: "62 títulos em atraso",
-    icon: AlertTriangle,
-    tone: "destructive" as const,
-  },
-  {
-    label: "Operações no mês",
-    value: "184",
-    delta: "+12 vs. mês anterior",
-    icon: Activity,
-    tone: "primary" as const,
-  },
-  {
-    label: "Ticket médio",
-    value: "R$ 67.840",
-    delta: "+2,1% no trimestre",
-    icon: Receipt,
-    tone: "accent" as const,
-  },
-  {
-    label: "Taxa média praticada",
-    value: "2,84% a.m.",
-    delta: "-0,12 p.p. no mês",
-    icon: Percent,
-    tone: "warning" as const,
-  },
-  {
-    label: "Clientes ativos",
-    value: "127",
-    delta: "+5 este mês",
-    icon: Users,
-    tone: "primary" as const,
-  },
-  {
-    label: "Sacados ativos",
-    value: "892",
-    delta: "+34 este mês",
-    icon: Building2,
-    tone: "primary" as const,
-  },
-];
-
-const proximosVencimentos = [
-  { id: "TIT-10245", cedente: "Comercial Vitória LTDA", sacado: "Supermercado Atlas SA", vencimento: "26/04/2026", valor: "R$ 18.420,00" },
-  { id: "TIT-10246", cedente: "Indústria Norte SA", sacado: "Mercantil Bahia LTDA", vencimento: "27/04/2026", valor: "R$ 9.680,00" },
-  { id: "TIT-10247", cedente: "Tech Logística ME", sacado: "Transportes Litoral SA", vencimento: "28/04/2026", valor: "R$ 4.215,00" },
-  { id: "TIT-10248", cedente: "Distribuidora Sul LTDA", sacado: "Rede Farma Plus", vencimento: "29/04/2026", valor: "R$ 25.170,00" },
-  { id: "TIT-10249", cedente: "Agro Pampa LTDA", sacado: "Cooperativa Central", vencimento: "30/04/2026", valor: "R$ 7.890,00" },
-  { id: "TIT-10250", cedente: "Metalúrgica Ipê SA", sacado: "Construtora Horizonte", vencimento: "02/05/2026", valor: "R$ 33.500,00" },
-];
-
-const titulosVencidos = [
-  { id: "TIT-09812", cedente: "Têxtil Aurora LTDA", sacado: "Modas Bella SA", vencimento: "10/04/2026", diasAtraso: 16, valor: "R$ 12.300,00" },
-  { id: "TIT-09845", cedente: "Comercial Vitória LTDA", sacado: "Mercado Vila Nova", vencimento: "14/04/2026", diasAtraso: 12, valor: "R$ 6.450,00" },
-  { id: "TIT-09877", cedente: "Indústria Norte SA", sacado: "Atacadão Pampulha", vencimento: "18/04/2026", diasAtraso: 8, valor: "R$ 21.800,00" },
-  { id: "TIT-09901", cedente: "Distribuidora Sul LTDA", sacado: "Padaria Estrela", vencimento: "20/04/2026", diasAtraso: 6, valor: "R$ 3.120,00" },
-  { id: "TIT-09934", cedente: "Tech Logística ME", sacado: "EcoTrans LTDA", vencimento: "22/04/2026", diasAtraso: 4, valor: "R$ 5.940,00" },
-];
-
-const evolucaoCarteira = [
-  { mes: "Mai", valor: 8.2 },
-  { mes: "Jun", valor: 8.9 },
-  { mes: "Jul", valor: 9.6 },
-  { mes: "Ago", valor: 10.1 },
-  { mes: "Set", valor: 10.8 },
-  { mes: "Out", valor: 11.2 },
-  { mes: "Nov", valor: 11.7 },
-  { mes: "Dez", valor: 11.5 },
-  { mes: "Jan", valor: 11.9 },
-  { mes: "Fev", valor: 12.1 },
-  { mes: "Mar", valor: 12.3 },
-  { mes: "Abr", valor: 12.48 },
-];
-
-const operacoesPorStatus = [
-  { status: "Em análise", total: 24 },
-  { status: "Aprovada", total: 38 },
-  { status: "Formalizada", total: 52 },
-  { status: "Liquidada", total: 412 },
-  { status: "Em atraso", total: 62 },
-  { status: "Recomprada", total: 14 },
-  { status: "Cancelada", total: 9 },
-];
-
-const statusVariant: Record<string, string> = {
-  "Em análise": "bg-muted text-muted-foreground border-border",
-  "Aprovada": "bg-primary/10 text-primary border-primary/20",
-  "Formalizada": "bg-accent/15 text-accent-foreground border-accent/30",
-  "Liquidada": "bg-success/10 text-success border-success/20",
-  "Em atraso": "bg-destructive/10 text-destructive border-destructive/20",
-  "Recomprada": "bg-warning/15 text-warning-foreground border-warning/30",
-  "Cancelada": "bg-muted text-muted-foreground border-border line-through",
-};
+import { useClientes } from "@/hooks/useClientes";
+import { useSacados } from "@/hooks/useSacados";
+import { useTitulos } from "@/hooks/useTitulos";
+import { useOperacoes } from "@/hooks/useOperacoes";
+import { montarDashboard } from "@/lib/dashboardAgregado";
+import { formatBRL, formatNumber } from "@/lib/format";
+import { formatBR } from "@/lib/dateUtils";
 
 /* ---------- Component ---------- */
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
+  const {
+    clientes,
+    isLoading: isLoadingClientes,
+    error: errorClientes,
+  } = useClientes();
+  const {
+    sacados,
+    isLoading: isLoadingSacados,
+    error: errorSacados,
+  } = useSacados();
+  const {
+    titulos,
+    isLoading: isLoadingTitulos,
+    error: errorTitulos,
+  } = useTitulos();
+  const {
+    operacoes,
+    isLoading: isLoadingOperacoes,
+    error: errorOperacoes,
+  } = useOperacoes();
+
+  // Qualquer fonte carregando mantém o LoadingState (mesmo padrão de
+  // Relatorios L145-151): cedenteNome/sacadoNome dependem do lookup
+  // clientes+sacados nos mappers de título/operação.
+  const isLoading =
+    isLoadingClientes ||
+    isLoadingSacados ||
+    isLoadingTitulos ||
+    isLoadingOperacoes;
+  const error =
+    errorClientes ?? errorSacados ?? errorTitulos ?? errorOperacoes;
+
+  const dash = useMemo(
+    () => montarDashboard({ clientes, sacados, titulos, operacoes }),
+    [clientes, sacados, titulos, operacoes],
+  );
+
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader
+          title="Dashboard"
+          description="Visão geral da carteira, operações e cobrança."
+        />
+        <LoadingState label="Carregando dashboard..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <PageHeader
+          title="Dashboard"
+          description="Visão geral da carteira, operações e cobrança."
+        />
+        <ErrorState
+          title="Não foi possível carregar"
+          description={
+            error instanceof Error ? error.message : "Erro inesperado."
+          }
+        />
+      </div>
+    );
+  }
+
+  const { kpis } = dash;
+  const deltaOperacoes = kpis.operacoesNoMes - kpis.operacoesMesAnterior;
+
+  const cards = [
+    {
+      label: "Valor total em carteira",
+      value: formatBRL(kpis.carteiraEmAberto),
+      hint: `${formatNumber(kpis.qtdTitulosEmAberto)} títulos em aberto`,
+      icon: Wallet,
+      tone: "primary" as const,
+    },
+    {
+      label: "Total a vencer",
+      value: formatBRL(kpis.totalAVencer),
+      hint: `${formatNumber(kpis.qtdAVencer)} títulos`,
+      icon: CalendarClock,
+      tone: "success" as const,
+    },
+    {
+      label: "Total vencido",
+      value: formatBRL(kpis.totalVencido),
+      hint: `${formatNumber(kpis.qtdVencido)} em atraso`,
+      icon: AlertTriangle,
+      tone: "destructive" as const,
+    },
+    {
+      label: "Operações no mês",
+      value: formatNumber(kpis.operacoesNoMes),
+      hint: `${deltaOperacoes >= 0 ? "+" : ""}${formatNumber(
+        deltaOperacoes,
+      )} vs. mês anterior`,
+      icon: Activity,
+      tone: "primary" as const,
+    },
+    {
+      label: "Ticket médio",
+      value: formatBRL(kpis.ticketMedio),
+      // Sem sub-texto: não há base para variação (operações sem snapshot histórico).
+      hint: undefined,
+      icon: Receipt,
+      tone: "accent" as const,
+    },
+    {
+      label: "Taxa média praticada",
+      value: `${kpis.taxaMediaPonderada.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}% a.m.`,
+      hint: undefined,
+      icon: Percent,
+      tone: "warning" as const,
+    },
+    {
+      label: "Clientes ativos",
+      value: formatNumber(kpis.clientesAtivos),
+      hint: `+${formatNumber(kpis.clientesNovosNoMes)} novos este mês`,
+      icon: Users,
+      tone: "primary" as const,
+    },
+    {
+      label: "Sacados ativos",
+      value: formatNumber(kpis.sacadosAtivos),
+      hint: `+${formatNumber(kpis.sacadosNovosNoMes)} novos este mês`,
+      icon: Building2,
+      tone: "primary" as const,
+    },
+  ];
+
   return (
     <div>
       <PageHeader
         title="Dashboard"
         description="Visão geral da carteira, operações e cobrança."
         actions={
-          <Button className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90">
+          <Button
+            onClick={() => navigate("/operacoes/simulador")}
+            className="bg-gradient-primary text-primary-foreground shadow-elevated hover:opacity-90"
+          >
             Nova operação
             <ArrowUpRight className="ml-1 h-4 w-4" />
           </Button>
@@ -165,14 +203,14 @@ export default function Dashboard() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {kpis.map((kpi) => (
+        {cards.map((card) => (
           <KpiCard
-            key={kpi.label}
-            label={kpi.label}
-            value={kpi.value}
-            hint={kpi.delta}
-            icon={kpi.icon}
-            tone={kpi.tone}
+            key={card.label}
+            label={card.label}
+            value={card.value}
+            hint={card.hint}
+            icon={card.icon}
+            tone={card.tone}
           />
         ))}
       </div>
@@ -181,70 +219,78 @@ export default function Dashboard() {
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 shadow-card">
           <CardHeader>
-            <CardTitle className="text-base">
-              Evolução mensal da carteira
-            </CardTitle>
+            <CardTitle className="text-base">Volume operado por mês</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Valores em milhões (R$) — últimos 12 meses
+              Soma do valor bruto operado, por mês da operação
             </p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart
-                data={evolucaoCarteira}
-                margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="carteiraGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="0%"
-                      stopColor="hsl(var(--primary))"
-                      stopOpacity={0.4}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor="hsl(var(--primary))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="mes"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => `R$ ${v}M`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "var(--radius)",
-                    fontSize: 12,
-                  }}
-                  formatter={(v: number) => [`R$ ${v.toFixed(2)} M`, "Carteira"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="valor"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  fill="url(#carteiraGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {dash.volumePorMes.length === 0 ? (
+              <EmptyChart msg="Sem operações para exibir." />
+            ) : (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart
+                  data={dash.volumePorMes}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id="volumeGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0.4}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor="hsl(var(--primary))"
+                        stopOpacity={0}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="mes"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => formatBRL(Number(v)).replace("R$", "")}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                      fontSize: 12,
+                    }}
+                    formatter={(v: number) => [formatBRL(v), "Volume operado"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="valor"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#volumeGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -258,7 +304,7 @@ export default function Dashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
-                data={operacoesPorStatus}
+                data={dash.operacoesPorStatus}
                 layout="vertical"
                 margin={{ top: 5, right: 10, left: 10, bottom: 0 }}
               >
@@ -269,6 +315,7 @@ export default function Dashboard() {
                 />
                 <XAxis
                   type="number"
+                  allowDecimals={false}
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={11}
                   tickLine={false}
@@ -309,14 +356,14 @@ export default function Dashboard() {
             <div>
               <CardTitle className="text-base">Próximos vencimentos</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Títulos a vencer nos próximos dias
+                Títulos a vencer mais próximos
               </p>
             </div>
             <Badge
               variant="outline"
               className="border-success/30 bg-success/10 text-success"
             >
-              {proximosVencimentos.length} títulos
+              {dash.proximosVencimentos.length} títulos
             </Badge>
           </CardHeader>
           <CardContent>
@@ -330,18 +377,33 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {proximosVencimentos.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-mono text-xs">{t.id}</TableCell>
-                    <TableCell className="font-medium">{t.sacado}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {t.vencimento}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold">
-                      {t.valor}
+                {dash.proximosVencimentos.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-6 text-center text-sm text-muted-foreground"
+                    >
+                      Nenhum título a vencer.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  dash.proximosVencimentos.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-mono text-xs">
+                        {t.numero}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {t.sacadoNome}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatBR(t.dataVencimento)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold">
+                        {formatBRL(t.valorFace)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -359,7 +421,7 @@ export default function Dashboard() {
               variant="outline"
               className="border-destructive/30 bg-destructive/10 text-destructive"
             >
-              {titulosVencidos.length} em atraso
+              {dash.titulosVencidos.length} em atraso
             </Badge>
           </CardHeader>
           <CardContent>
@@ -373,28 +435,51 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {titulosVencidos.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-mono text-xs">{t.id}</TableCell>
-                    <TableCell className="font-medium">{t.sacado}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant="outline"
-                        className={statusVariant["Em atraso"]}
-                      >
-                        {t.diasAtraso} dias
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold">
-                      {t.valor}
+                {dash.titulosVencidos.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-6 text-center text-sm text-muted-foreground"
+                    >
+                      Nenhum título vencido.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  dash.titulosVencidos.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-mono text-xs">
+                        {t.numero}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {t.sacadoNome}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant="outline"
+                          className="border-destructive/20 bg-destructive/10 text-destructive"
+                        >
+                          {t.diasAtraso} dias
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold">
+                        {formatBRL(t.valorFace)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function EmptyChart({ msg }: { msg: string }) {
+  return (
+    <div className="flex h-[280px] items-center justify-center rounded-md border border-dashed bg-muted/30 text-sm text-muted-foreground">
+      {msg}
     </div>
   );
 }
