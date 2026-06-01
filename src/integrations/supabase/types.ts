@@ -59,6 +59,42 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          ator: string | null
+          ator_nome: string | null
+          created_at: string
+          dados_antigos: Json | null
+          dados_novos: Json | null
+          id: string
+          operacao: string
+          registro_id: string | null
+          tabela: string
+        }
+        Insert: {
+          ator?: string | null
+          ator_nome?: string | null
+          created_at?: string
+          dados_antigos?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          operacao: string
+          registro_id?: string | null
+          tabela: string
+        }
+        Update: {
+          ator?: string | null
+          ator_nome?: string | null
+          created_at?: string
+          dados_antigos?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          operacao?: string
+          registro_id?: string | null
+          tabela?: string
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
           agencia: string
@@ -943,9 +979,31 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      audit_log_legivel: {
+        Row: {
+          ator: string | null
+          ator_nome: string | null
+          ator_papel: Database["public"]["Enums"]["app_role"] | null
+          created_at: string | null
+          dados_antigos: Json | null
+          dados_novos: Json | null
+          id: string | null
+          operacao: string | null
+          registro_id: string | null
+          tabela: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      alterar_status_operacao: {
+        Args: {
+          p_novo_status: Database["public"]["Enums"]["operacao_status"]
+          p_observacao?: string
+          p_operacao_id: string
+        }
+        Returns: undefined
+      }
       criar_operacao: { Args: { payload: Json }; Returns: string }
       get_user_roles: {
         Args: { _user_id: string }
