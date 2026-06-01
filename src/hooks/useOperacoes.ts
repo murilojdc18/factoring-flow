@@ -2,7 +2,11 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { isSupabaseEnabled } from "@/lib/dataSource";
-import { mockOperacoes, type Operacao } from "@/data/mockOperacoes";
+import {
+  mockOperacoes,
+  type Operacao,
+  type OperacaoStatus,
+} from "@/data/mockOperacoes";
 import {
   operacaoToRow,
   rowToOperacao,
@@ -24,10 +28,12 @@ export type CriarOperacaoPayload = ReturnType<typeof operacaoToRow> & {
 
 /**
  * Traduz erros da RPC `criar_operacao` (e do Postgres) em mensagens amigáveis.
- * P0001–P0004 são os SQLSTATE customizados da função; P0002/P0004 já vêm em
- * pt-BR do banco, então repassamos a mensagem original. 42501 = sem privilégio;
- * 23505/23503/23502 são violações padrão do Postgres. Sempre retorna uma
- * instância de Error para o toast da página exibir `.message`.
+ * P0001/P0002/P0003/P0010 são os SQLSTATE customizados da função (P0010 é o
+ * antigo P0004, trocado para fora da classe reservada P00 do Postgres — ver
+ * migration fix_errcode_p0004_para_p0010); P0002/P0010 já vêm em pt-BR do banco,
+ * então repassamos a mensagem original. 42501 = sem privilégio; 23505/23503/23502
+ * são violações padrão do Postgres. Sempre retorna uma instância de Error para o
+ * toast da página exibir `.message`.
  */
 function traduzirErroOperacao(error: {
   code?: string;
@@ -42,7 +48,7 @@ function traduzirErroOperacao(error: {
       return new Error(
         "Um ou mais títulos já foram operados. Atualize a página e tente novamente.",
       );
-    case "P0004":
+    case "P0010":
       return new Error(error.message);
     case "42501":
       return new Error("Você não tem permissão para criar operações.");
@@ -52,6 +58,40 @@ function traduzirErroOperacao(error: {
       return new Error("Algum cedente ou título referenciado não existe mais.");
     case "23502":
       return new Error("Algum dado obrigatório está faltando.");
+    default:
+      return error instanceof Error ? error : new Error(error.message);
+  }
+}
+
+/**
+ * Traduz erros da RPC `alterar_status_operacao` em mensagens amigáveis.
+ * Códigos da função (ver migration alterar_status_operacao + fix_errcode_..):
+ *   42501 = papel insuficiente; P0001 = operação não encontrada;
+ *   P0002 = transição inválida (mensagem do banco já traz "X -> Y");
+ *   P0010 = cancelamento sem motivo. P0003 não é usado por esta RPC hoje, mas
+ *   fica mapeado por simetria com `criar_operacao`. Default repassa a mensagem.
+ */
+function traduzirErroAlterarStatus(error: {
+  code?: string;
+  message: string;
+}): Error {
+  switch (error.code) {
+    case "42501":
+      return new Error(
+        "Você não tem permissão para alterar o status desta operação.",
+      );
+    case "P0001":
+      return new Error(
+        "Operação não encontrada. Atualize a página e tente novamente.",
+      );
+    case "P0002":
+      return new Error(error.message);
+    case "P0003":
+      return new Error(
+        "Um ou mais títulos não estão no estado esperado. Atualize a página e tente novamente.",
+      );
+    case "P0010":
+      return new Error("Informe o motivo do cancelamento.");
     default:
       return error instanceof Error ? error : new Error(error.message);
   }
@@ -136,6 +176,29 @@ export function useOperacoes() {
     },
   });
 
+  // Transição de status via RPC `alterar_status_operacao` (Fase 3). A RPC valida
+  // papel + máquina de estados v1, exige motivo no cancelamento (P0010) e, ao
+  // cancelar, devolve os títulos reservados (Operado -> Disponível) — por isso o
+  // onSuccess invalida operações E títulos.
+  const alterarStatusMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string;
+      novoStatus: OperacaoStatus;
+      observacao?: string;
+    }): Promise<void> => {
+      const { error } = await supabase.rpc("alterar_status_operacao", {
+        p_operacao_id: vars.id,
+        p_novo_status: vars.novoStatus,
+        p_observacao: vars.observacao ?? "",
+      });
+      if (error) throw traduzirErroAlterarStatus(error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ["titulos"] });
+    },
+  });
+
   if (!enabled) {
     return {
       operacoes: mockState,
@@ -150,6 +213,17 @@ export function useOperacoes() {
           "Criação de operação requer o Supabase ativo (flag operacoes).",
         );
       },
+      // Idem: a transição de status é a RPC atômica do Supabase; sem equivalente
+      // mock fiel. Mantém a assinatura entre os modos.
+      alterarStatus: async (
+        _id: string,
+        _novoStatus: OperacaoStatus,
+        _observacao?: string,
+      ): Promise<void> => {
+        throw new Error(
+          "Alterar status de operação requer o Supabase ativo (flag operacoes).",
+        );
+      },
     };
   }
 
@@ -160,5 +234,11 @@ export function useOperacoes() {
     source: "supabase" as const,
     create: async (payload: CriarOperacaoPayload): Promise<string> =>
       createMutation.mutateAsync(payload),
+    alterarStatus: async (
+      id: string,
+      novoStatus: OperacaoStatus,
+      observacao?: string,
+    ): Promise<void> =>
+      alterarStatusMutation.mutateAsync({ id, novoStatus, observacao }),
   };
 }

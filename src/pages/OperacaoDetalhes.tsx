@@ -6,11 +6,14 @@ import {
   FileText,
   FileSignature,
   FilePlus2,
+  FileCheck2,
+  CircleDollarSign,
   Pencil,
   XCircle,
   Info,
   History,
   ShieldAlert,
+  type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -56,6 +59,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/AuthContext";
+import { podeTransicionar } from "@/lib/operacaoTransicoes";
+import type { OperacaoStatus } from "@/data/mockOperacoes";
+import type { AppRole } from "@/lib/permissions";
+
+/**
+ * Transições manuais expostas na tela (máquina v1). A visibilidade de cada botão
+ * é decidida por `podeFazer` (transição válida a partir do status atual + papel).
+ */
+const TRANSICOES_UI: {
+  alvo: OperacaoStatus;
+  label: string;
+  icon: LucideIcon;
+  destrutivo?: boolean;
+}[] = [
+  { alvo: "Aprovada", label: "Aprovar", icon: CheckCircle2 },
+  { alvo: "Formalizada", label: "Formalizar", icon: FileCheck2 },
+  { alvo: "Liquidada", label: "Liquidar", icon: CircleDollarSign },
+  { alvo: "Cancelada", label: "Cancelar", icon: XCircle, destrutivo: true },
+];
 
 export default function OperacaoDetalhes() {
   const { id } = useParams();
@@ -67,6 +101,13 @@ export default function OperacaoDetalhes() {
     | "Borderô de títulos"
     | null
   >(null);
+
+  // Transição de status (Fase 3): alvo do dialog de confirmação + observação.
+  const [transicaoAlvo, setTransicaoAlvo] = useState<OperacaoStatus | null>(
+    null,
+  );
+  const [observacaoTransicao, setObservacaoTransicao] = useState("");
+  const [isTransicionando, setIsTransicionando] = useState(false);
 
   // Recompra/substituição
   const { porOperacao, estado, updateStatus } = useRecompras();
@@ -105,8 +146,13 @@ export default function OperacaoDetalhes() {
     }
   };
 
-  const { operacoes, isLoading: isLoadingOperacoes, error: errorOperacoes } =
-    useOperacoes();
+  const {
+    operacoes,
+    isLoading: isLoadingOperacoes,
+    error: errorOperacoes,
+    alterarStatus,
+  } = useOperacoes();
+  const { roles } = useAuth();
   const { clientes, isLoading: isLoadingClientes, error: errorClientes } =
     useClientes();
   const {
@@ -184,10 +230,56 @@ export default function OperacaoDetalhes() {
     });
   };
 
-  const podeAprovar = operacao.status === "Em análise";
-  const podeCancelar = !["Liquidada", "Cancelada", "Recomprada"].includes(
-    operacao.status,
-  );
+  // Papel exigido pela RPC: liquidar aceita +financeiro; demais = admin/operacional.
+  const temPapel = (alvo: OperacaoStatus): boolean => {
+    const permitidos: AppRole[] =
+      alvo === "Liquidada"
+        ? ["administrador", "operacional", "financeiro"]
+        : ["administrador", "operacional"];
+    return roles.some((r) => permitidos.includes(r));
+  };
+
+  // Botão só aparece se a máquina v1 permite a transição E o papel autoriza. A RPC
+  // revalida tudo no banco — isto é só UX (espelha operacaoTransicoes.ts).
+  const podeFazer = (alvo: OperacaoStatus): boolean =>
+    podeTransicionar(operacao.status, alvo) && temPapel(alvo);
+
+  const cancelando = transicaoAlvo === "Cancelada";
+  // Espelha o P0010 da RPC: cancelar exige motivo não-vazio.
+  const obsObrigatoriaFaltando =
+    cancelando && observacaoTransicao.trim() === "";
+
+  const abrirTransicao = (alvo: OperacaoStatus) => {
+    setObservacaoTransicao("");
+    setTransicaoAlvo(alvo);
+  };
+
+  const fecharTransicao = () => {
+    setTransicaoAlvo(null);
+    setObservacaoTransicao("");
+  };
+
+  const confirmarTransicao = async () => {
+    const alvo = transicaoAlvo;
+    if (!alvo) return;
+    if (alvo === "Cancelada" && observacaoTransicao.trim() === "") return;
+    setIsTransicionando(true);
+    try {
+      await alterarStatus(
+        operacao.id,
+        alvo,
+        observacaoTransicao.trim() || undefined,
+      );
+      toast.success(`Status alterado para ${alvo}.`);
+      fecharTransicao();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Erro ao alterar o status.",
+      );
+    } finally {
+      setIsTransicionando(false);
+    }
+  };
 
   const solicitacoesOperacao = porOperacao(operacao.id);
 
@@ -230,11 +322,20 @@ export default function OperacaoDetalhes() {
                 <Button variant="outline" size="sm" onClick={() => acaoSimulada("Edição em modo proforma.")}>
                   <Pencil className="mr-2 h-4 w-4" /> Editar
                 </Button>
-                {podeAprovar && (
-                  <Button size="sm" onClick={() => acaoSimulada("Operação aprovada (mock).")}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar
-                  </Button>
-                )}
+                {TRANSICOES_UI.filter(
+                  (t) => !t.destrutivo && podeFazer(t.alvo),
+                ).map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <Button
+                      key={t.alvo}
+                      size="sm"
+                      onClick={() => abrirTransicao(t.alvo)}
+                    >
+                      <Icon className="mr-2 h-4 w-4" /> {t.label}
+                    </Button>
+                  );
+                })}
                 <Button variant="outline" size="sm" onClick={() => setGerarTipo("Borderô de títulos")}>
                   <FileText className="mr-2 h-4 w-4" /> Borderô
                 </Button>
@@ -244,11 +345,22 @@ export default function OperacaoDetalhes() {
                 <Button variant="outline" size="sm" onClick={() => setGerarTipo("Aditivo de operação")}>
                   <FilePlus2 className="mr-2 h-4 w-4" /> Aditivo
                 </Button>
-                {podeCancelar && (
-                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => acaoSimulada("Operação cancelada (mock).")}>
-                    <XCircle className="mr-2 h-4 w-4" /> Cancelar
-                  </Button>
-                )}
+                {TRANSICOES_UI.filter(
+                  (t) => t.destrutivo && podeFazer(t.alvo),
+                ).map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <Button
+                      key={t.alvo}
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => abrirTransicao(t.alvo)}
+                    >
+                      <Icon className="mr-2 h-4 w-4" /> {t.label}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
             <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
@@ -534,6 +646,64 @@ export default function OperacaoDetalhes() {
           ])
         }
       />
+
+      {/* Confirmação de transição de status (Fase 3) */}
+      <AlertDialog
+        open={transicaoAlvo !== null}
+        onOpenChange={(aberto) => {
+          if (!aberto) fecharTransicao();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {cancelando
+                ? "Cancelar operação"
+                : `Confirmar: ${transicaoAlvo ?? ""}`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {transicaoAlvo &&
+                `A operação ${operacao.numero} passará para o status "${transicaoAlvo}".`}
+              {cancelando &&
+                " Os títulos reservados desta operação voltam a ficar disponíveis."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="obs-transicao">
+              {cancelando
+                ? "Motivo do cancelamento (obrigatório)"
+                : "Observação (opcional)"}
+            </Label>
+            <Textarea
+              id="obs-transicao"
+              value={observacaoTransicao}
+              onChange={(e) => setObservacaoTransicao(e.target.value)}
+              placeholder={
+                cancelando
+                  ? "Descreva o motivo do cancelamento..."
+                  : "Anote algo sobre esta mudança (opcional)..."
+              }
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isTransicionando}>
+              Voltar
+            </AlertDialogCancel>
+            <Button
+              variant={cancelando ? "destructive" : "default"}
+              disabled={isTransicionando || obsObrigatoriaFaltando}
+              onClick={confirmarTransicao}
+            >
+              {isTransicionando
+                ? "Processando..."
+                : cancelando
+                  ? "Confirmar cancelamento"
+                  : "Confirmar"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
