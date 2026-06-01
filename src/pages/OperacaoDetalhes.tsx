@@ -69,6 +69,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { podeTransicionar } from "@/lib/operacaoTransicoes";
@@ -108,6 +109,12 @@ export default function OperacaoDetalhes() {
   );
   const [observacaoTransicao, setObservacaoTransicao] = useState("");
   const [isTransicionando, setIsTransicionando] = useState(false);
+
+  // Edição v1 (metadados seguros): observações + responsável interno.
+  const [editando, setEditando] = useState(false);
+  const [editObs, setEditObs] = useState("");
+  const [editResp, setEditResp] = useState("");
+  const [isSalvandoEdicao, setIsSalvandoEdicao] = useState(false);
 
   // Recompra/substituição
   const { porOperacao, estado, updateStatus } = useRecompras();
@@ -151,6 +158,7 @@ export default function OperacaoDetalhes() {
     isLoading: isLoadingOperacoes,
     error: errorOperacoes,
     alterarStatus,
+    editarOperacao,
   } = useOperacoes();
   const { roles } = useAuth();
   const { clientes, isLoading: isLoadingClientes, error: errorClientes } =
@@ -220,9 +228,6 @@ export default function OperacaoDetalhes() {
     );
   }
 
-  const acaoSimulada = (msg: string, desc?: string) =>
-    toast.success(msg, { description: desc });
-
   const handleSalvarDocumento = (doc: DocumentoGerado) => {
     setGerarTipo(null);
     toast.success("Documento gerado salvo.", {
@@ -281,6 +286,38 @@ export default function OperacaoDetalhes() {
     }
   };
 
+  // Edição v1: papel administrador/operacional E status não-terminal (espelha o
+  // guard da RPC editar_operacao). Esconde o botão quando não pode.
+  const podeEditar =
+    roles.some((r) =>
+      (["administrador", "operacional"] as AppRole[]).includes(r),
+    ) &&
+    !(["Liquidada", "Cancelada", "Recomprada"] as OperacaoStatus[]).includes(
+      operacao.status,
+    );
+
+  const abrirEdicao = () => {
+    setEditObs(operacao.observacoes ?? "");
+    setEditResp(operacao.responsavelInterno ?? "");
+    setEditando(true);
+  };
+
+  const salvarEdicao = async () => {
+    if (editResp.trim() === "") return; // espelha o P0012 da RPC
+    setIsSalvandoEdicao(true);
+    try {
+      await editarOperacao(operacao.id, editObs, editResp.trim());
+      toast.success("Operação atualizada.");
+      setEditando(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Erro ao editar a operação.",
+      );
+    } finally {
+      setIsSalvandoEdicao(false);
+    }
+  };
+
   const solicitacoesOperacao = porOperacao(operacao.id);
 
   return (
@@ -319,9 +356,11 @@ export default function OperacaoDetalhes() {
                 <OperacaoStatusBadge status={operacao.status} />
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => acaoSimulada("Edição em modo proforma.")}>
-                  <Pencil className="mr-2 h-4 w-4" /> Editar
-                </Button>
+                {podeEditar && (
+                  <Button variant="outline" size="sm" onClick={abrirEdicao}>
+                    <Pencil className="mr-2 h-4 w-4" /> Editar
+                  </Button>
+                )}
                 {TRANSICOES_UI.filter(
                   (t) => !t.destrutivo && podeFazer(t.alvo),
                 ).map((t) => {
@@ -700,6 +739,56 @@ export default function OperacaoDetalhes() {
                 : cancelando
                   ? "Confirmar cancelamento"
                   : "Confirmar"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edição v1 de metadados seguros (observações + responsável) */}
+      <AlertDialog
+        open={editando}
+        onOpenChange={(aberto) => {
+          if (!aberto) setEditando(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar operação {operacao.numero}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Edita apenas observações e responsável interno. Valores, títulos e
+              cedente não são alterados aqui.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-resp">Responsável interno</Label>
+              <Input
+                id="edit-resp"
+                value={editResp}
+                onChange={(e) => setEditResp(e.target.value)}
+                placeholder="Nome do responsável"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-obs">Observações</Label>
+              <Textarea
+                id="edit-obs"
+                rows={4}
+                value={editObs}
+                onChange={(e) => setEditObs(e.target.value)}
+                placeholder="Observações internas da operação..."
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSalvandoEdicao}>
+              Voltar
+            </AlertDialogCancel>
+            <Button
+              disabled={isSalvandoEdicao || editResp.trim() === ""}
+              onClick={salvarEdicao}
+            >
+              {isSalvandoEdicao ? "Salvando..." : "Salvar"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

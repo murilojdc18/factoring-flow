@@ -98,6 +98,31 @@ function traduzirErroAlterarStatus(error: {
 }
 
 /**
+ * Traduz erros da RPC `editar_operacao`. 42501 = papel insuficiente;
+ * P0001 = operação não encontrada; P0011 = status terminal (mensagem do banco
+ * traz o status); P0012 = responsável vazio. Default repassa a mensagem.
+ */
+function traduzirErroEditarOperacao(error: {
+  code?: string;
+  message: string;
+}): Error {
+  switch (error.code) {
+    case "42501":
+      return new Error("Você não tem permissão para editar esta operação.");
+    case "P0001":
+      return new Error(
+        "Operação não encontrada. Atualize a página e tente novamente.",
+      );
+    case "P0011":
+      return new Error(error.message); // "Operação em status X não pode ser editada"
+    case "P0012":
+      return new Error("Informe o responsável interno.");
+    default:
+      return error instanceof Error ? error : new Error(error.message);
+  }
+}
+
+/**
  * Hook de LEITURA de operações (2.4a) + criação atômica (2.4b).
  * - Modo mock: lê `mockOperacoes` (mesma semântica anterior).
  * - Modo Supabase: TanStack Query + supabase.from("operacoes") com JOIN
@@ -221,6 +246,26 @@ export function useOperacoes() {
     },
   });
 
+  // Edição v1 de metadados seguros via RPC `editar_operacao`. NÃO toca títulos
+  // (edição segura) -> invalida só a query de operações.
+  const editarMutation = useMutation({
+    mutationFn: async (vars: {
+      id: string;
+      observacoes: string;
+      responsavelInterno: string;
+    }): Promise<void> => {
+      const { error } = await supabase.rpc("editar_operacao", {
+        p_operacao_id: vars.id,
+        p_observacoes: vars.observacoes,
+        p_responsavel_interno: vars.responsavelInterno,
+      });
+      if (error) throw traduzirErroEditarOperacao(error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+  });
+
   if (!enabled) {
     return {
       operacoes: mockState,
@@ -246,6 +291,15 @@ export function useOperacoes() {
           "Alterar status de operação requer o Supabase ativo (flag operacoes).",
         );
       },
+      editarOperacao: async (
+        _id: string,
+        _observacoes: string,
+        _responsavelInterno: string,
+      ): Promise<void> => {
+        throw new Error(
+          "Editar operação requer o Supabase ativo (flag operacoes).",
+        );
+      },
     };
   }
 
@@ -262,5 +316,11 @@ export function useOperacoes() {
       observacao?: string,
     ): Promise<void> =>
       alterarStatusMutation.mutateAsync({ id, novoStatus, observacao }),
+    editarOperacao: async (
+      id: string,
+      observacoes: string,
+      responsavelInterno: string,
+    ): Promise<void> =>
+      editarMutation.mutateAsync({ id, observacoes, responsavelInterno }),
   };
 }
