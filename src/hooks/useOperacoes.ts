@@ -130,17 +130,39 @@ export function useOperacoes() {
   // Resolve cedenteNome ao ler do Supabase.
   const { clientes } = useClientes();
 
+  // Resolve o nome de quem agiu (operacao_historico.created_by -> nome) para a
+  // timeline. Lê profiles inteiro (tabela pequena, 2 usuários) e cai no e-mail
+  // quando nome_completo está vazio — mesmo fallback do useCobrancas.
+  const profilesQuery = useQuery({
+    queryKey: ["profiles", "lookup"],
+    enabled,
+    queryFn: async (): Promise<{ id: string; nome: string }[]> => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nome_completo, email");
+      if (error) throw error;
+      return (data ?? []).map((p) => ({
+        id: p.id,
+        nome: p.nome_completo || p.email || "",
+      }));
+    },
+  });
+
   const lookup: OperacaoLookup = useMemo(
     () => ({
       cedentes: new Map(clientes.map((c) => [c.id, c.razaoSocial])),
+      responsaveis: new Map(
+        (profilesQuery.data ?? []).map((p) => [p.id, p.nome]),
+      ),
     }),
-    [clientes],
+    [clientes, profilesQuery.data],
   );
 
   const query = useQuery({
-    // clientes.length entra na chave para re-mapear os nomes quando a lista de
-    // clientes terminar de carregar (espelha useTitulos).
-    queryKey: [...QUERY_KEY, clientes.length],
+    // clientes.length E profiles.length entram na chave para re-mapear os nomes
+    // (cedente e responsável) quando essas listas terminarem de carregar — sem
+    // isso o lookup do closure fica defasado se chegarem após a 1ª busca.
+    queryKey: [...QUERY_KEY, clientes.length, profilesQuery.data?.length ?? 0],
     enabled,
     queryFn: async (): Promise<Operacao[]> => {
       const { data, error } = await supabase
