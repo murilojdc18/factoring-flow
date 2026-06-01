@@ -1005,6 +1005,14 @@ export type Database = {
         Returns: undefined
       }
       criar_operacao: { Args: { payload: Json }; Returns: string }
+      editar_operacao: {
+        Args: {
+          p_observacoes: string
+          p_operacao_id: string
+          p_responsavel_interno: string
+        }
+        Returns: undefined
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
