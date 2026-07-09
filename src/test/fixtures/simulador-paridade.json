@@ -1,0 +1,258 @@
+{
+  "_leia_me": [
+    "Fixtures de PARIDADE do cálculo do simulador. Fonte única para dois consumidores:",
+    "1) src/lib/simuladorParidade.test.ts — roda contra calcularSimulacao (TS, estimativa de tela);",
+    "2) supabase/tests/paridade_calcular_operacao.sql — roda contra calcular_operacao (plpgsql, canônica), espelhado manualmente deste arquivo.",
+    "Valores monetários esperados são PÓS-round2 (2 casas, half away from zero) e comparados com igualdade exata;",
+    "os casos foram escolhidos longe de fronteiras de meio centavo, onde float64 (TS) e numeric (SQL) arredondam igual.",
+    "taxa_diaria_equivalente e prazo_medio_ponderado não são arredondados pela função: comparar com tolerância 1e-9.",
+    "Datas em yyyy-mm-dd; data_referencia é sempre explícita (nenhum caso depende do relógio)."
+  ],
+  "casos": [
+    {
+      "nome": "caso-normal: 2 títulos válidos, parâmetros default",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "T-1", "valor_face": 10000, "data_vencimento": "2026-06-25" },
+        { "numero": "T-2", "valor_face": 20000, "data_vencimento": "2026-07-25" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3.5, "tarifa_fixa": 150, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 2,
+        "valor_bruto": 30000,
+        "prazo_medio_ponderado": 30,
+        "valor_desagio": 1050,
+        "valor_tarifas": 200,
+        "valor_retencao": 1500,
+        "valor_liquido": 27250,
+        "taxa_diaria_equivalente": 0.11666666666666667,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "lista-vazia (Regra A): tudo zerado exceto taxa diária",
+      "data_referencia": "2026-06-15",
+      "titulos": [],
+      "parametros": { "taxa_fator_mensal": 3.5, "tarifa_fixa": 150, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 0,
+        "valor_bruto": 0,
+        "prazo_medio_ponderado": 0,
+        "valor_desagio": 0,
+        "valor_tarifas": 0,
+        "valor_retencao": 0,
+        "valor_liquido": 0,
+        "taxa_diaria_equivalente": 0.11666666666666667,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "todos-vencidos (Regra B): idêntico à lista vazia + ignorados na ordem de entrada",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "V-1", "valor_face": 10000, "data_vencimento": "2026-06-14" },
+        { "numero": "V-2", "valor_face": 10000, "data_vencimento": "2026-06-10" },
+        { "numero": "V-3", "valor_face": 10000, "data_vencimento": "2026-06-05" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3.5, "tarifa_fixa": 150, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 0,
+        "valor_bruto": 0,
+        "prazo_medio_ponderado": 0,
+        "valor_desagio": 0,
+        "valor_tarifas": 0,
+        "valor_retencao": 0,
+        "valor_liquido": 0,
+        "taxa_diaria_equivalente": 0.11666666666666667,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": ["V-1", "V-2", "V-3"]
+      }
+    },
+    {
+      "nome": "misto (Regras A+B): vencidos saem do cálculo, válidos entram",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "V-1", "valor_face": 5000, "data_vencimento": "2026-06-12" },
+        { "numero": "OK-1", "valor_face": 10000, "data_vencimento": "2026-07-05" },
+        { "numero": "V-2", "valor_face": 9999, "data_vencimento": "2026-06-14" },
+        { "numero": "OK-2", "valor_face": 30000, "data_vencimento": "2026-08-14" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3.5, "tarifa_fixa": 150, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 2,
+        "valor_bruto": 40000,
+        "prazo_medio_ponderado": 50,
+        "valor_desagio": 2333.33,
+        "valor_tarifas": 200,
+        "valor_retencao": 2000,
+        "valor_liquido": 35466.67,
+        "taxa_diaria_equivalente": 0.11666666666666667,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": ["V-1", "V-2"]
+      }
+    },
+    {
+      "nome": "vence-hoje (Regra C): prazo real 0, deságio usa piso de 1 dia",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "H-1", "valor_face": 10000, "data_vencimento": "2026-06-15" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3.5, "tarifa_fixa": 150, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 1,
+        "valor_bruto": 10000,
+        "prazo_medio_ponderado": 0,
+        "valor_desagio": 11.67,
+        "valor_tarifas": 175,
+        "valor_retencao": 500,
+        "valor_liquido": 9313.33,
+        "taxa_diaria_equivalente": 0.11666666666666667,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "taxa-zero: deságio zerado, demais parcelas normais",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "Z-1", "valor_face": 10000, "data_vencimento": "2026-07-15" }
+      ],
+      "parametros": { "taxa_fator_mensal": 0, "tarifa_fixa": 100, "tarifa_por_titulo": 10, "percentual_retencao": 10 },
+      "esperado": {
+        "quantidade_titulos": 1,
+        "valor_bruto": 10000,
+        "prazo_medio_ponderado": 30,
+        "valor_desagio": 0,
+        "valor_tarifas": 110,
+        "valor_retencao": 1000,
+        "valor_liquido": 8890,
+        "taxa_diaria_equivalente": 0,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "liquido-negativo (Regra D): tarifa fixa maior que o bruto",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "N-1", "valor_face": 10000, "data_vencimento": "2026-07-15" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3, "tarifa_fixa": 20000, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 1,
+        "valor_bruto": 10000,
+        "prazo_medio_ponderado": 30,
+        "valor_desagio": 300,
+        "valor_tarifas": 20025,
+        "valor_retencao": 500,
+        "valor_liquido": -10825,
+        "taxa_diaria_equivalente": 0.1,
+        "liquido_invalido": true,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "artefato-centavos: valores quebrados forçando arredondamento",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "FP-1", "valor_face": 12345.67, "data_vencimento": "2026-06-28" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3.7, "tarifa_fixa": 99.99, "tarifa_por_titulo": 9.99, "percentual_retencao": 7 },
+      "esperado": {
+        "quantidade_titulos": 1,
+        "valor_bruto": 12345.67,
+        "prazo_medio_ponderado": 13,
+        "valor_desagio": 197.94,
+        "valor_tarifas": 109.98,
+        "valor_retencao": 864.2,
+        "valor_liquido": 11173.55,
+        "taxa_diaria_equivalente": 0.12333333333333334,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "saneamento: parâmetros negativos viram 0 (Regra E)",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "S-1", "valor_face": 10000, "data_vencimento": "2026-07-15" }
+      ],
+      "parametros": { "taxa_fator_mensal": -3.5, "tarifa_fixa": -150, "tarifa_por_titulo": -25, "percentual_retencao": -5 },
+      "esperado": {
+        "quantidade_titulos": 1,
+        "valor_bruto": 10000,
+        "prazo_medio_ponderado": 30,
+        "valor_desagio": 0,
+        "valor_tarifas": 0,
+        "valor_retencao": 0,
+        "valor_liquido": 10000,
+        "taxa_diaria_equivalente": 0,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "data-base-diferente (Regra F): referência 10 dias à frente encurta o prazo",
+      "data_referencia": "2026-06-25",
+      "titulos": [
+        { "numero": "F-1", "valor_face": 10000, "data_vencimento": "2026-07-15" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3.5, "tarifa_fixa": 150, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 1,
+        "valor_bruto": 10000,
+        "prazo_medio_ponderado": 20,
+        "valor_desagio": 233.33,
+        "valor_tarifas": 175,
+        "valor_retencao": 500,
+        "valor_liquido": 9091.67,
+        "taxa_diaria_equivalente": 0.11666666666666667,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "prazo-fracionario: média ponderada não-inteira (12,5 dias) preservada no retorno",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "P-1", "valor_face": 10000, "data_vencimento": "2026-06-25" },
+        { "numero": "P-2", "valor_face": 10000, "data_vencimento": "2026-06-30" }
+      ],
+      "parametros": { "taxa_fator_mensal": 3.5, "tarifa_fixa": 150, "tarifa_por_titulo": 25, "percentual_retencao": 5 },
+      "esperado": {
+        "quantidade_titulos": 2,
+        "valor_bruto": 20000,
+        "prazo_medio_ponderado": 12.5,
+        "valor_desagio": 291.67,
+        "valor_tarifas": 200,
+        "valor_retencao": 1000,
+        "valor_liquido": 18508.33,
+        "taxa_diaria_equivalente": 0.11666666666666667,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    },
+    {
+      "nome": "quase-zero: líquido cru -0,004 arredonda para 0,00 e NÃO é inválido (Regra D)",
+      "data_referencia": "2026-06-15",
+      "titulos": [
+        { "numero": "B-1", "valor_face": 0.996, "data_vencimento": "2026-07-15" }
+      ],
+      "parametros": { "taxa_fator_mensal": 0, "tarifa_fixa": 1, "tarifa_por_titulo": 0, "percentual_retencao": 0 },
+      "esperado": {
+        "quantidade_titulos": 1,
+        "valor_bruto": 1,
+        "prazo_medio_ponderado": 30,
+        "valor_desagio": 0,
+        "valor_tarifas": 1,
+        "valor_retencao": 0,
+        "valor_liquido": 0,
+        "taxa_diaria_equivalente": 0,
+        "liquido_invalido": false,
+        "titulos_vencidos_ignorados": []
+      }
+    }
+  ]
+}
