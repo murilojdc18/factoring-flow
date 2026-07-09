@@ -143,7 +143,9 @@ export default function OperacaoSimulador() {
       // numero gerado no front. Feio mas estável: ano + timestamp em ms evita
       // colidir com o UNIQUE de operacoes sem precisar de sequence no banco.
       const numero = `BOR-${new Date().getFullYear()}-${Date.now()}`;
-      // Envia o resultado JÁ calculado (o cálculo é fonte única do front).
+      // Os valores enviados são a estimativa de tela; o servidor recalcula a
+      // partir dos parâmetros (tarifas/retenção abaixo) e valida com tolerância
+      // de R$ 0,01 (P0013 em divergência). Em divergência, vale o servidor.
       // prazoMedio é arredondado: a coluna prazo_medio é integer e a RPC faz
       // cast ::integer (que rejeitaria um valor fracionário).
       const payload = {
@@ -163,6 +165,10 @@ export default function OperacaoSimulador() {
           observacoes,
         }),
         titulo_ids: titulosSelecionados.map((t) => t.id),
+        // Parâmetros usados no cálculo (a taxa já vai como taxa_aplicada).
+        tarifa_fixa: params.tarifaFixa,
+        tarifa_por_titulo: params.tarifaPorTitulo,
+        percentual_retencao: params.percentualRetencao,
       };
 
       const operacaoId = await create(payload);

@@ -36,7 +36,12 @@ const round2 = (v: number): number => Math.round(v * 100) / 100;
 const san = (n: number): number => (Number.isNaN(n) || n < 0 ? 0 : n);
 
 /**
- * Cálculo estimativo (NÃO definitivo). Usado apenas para simulação visual.
+ * ESTIMATIVA DE TELA — não é a fonte canônica do cálculo. A fonte canônica é
+ * a função `calcular_operacao` no banco (mesmas regras, em plpgsql): a RPC
+ * `criar_operacao` recalcula os valores no servidor e valida os daqui com
+ * tolerância de R$ 0,01; em divergência, vale o servidor. A paridade entre as
+ * duas implementações é garantida pelas fixtures compartilhadas em
+ * src/test/fixtures/simulador-paridade.json.
  * Deságio: valor_bruto * (taxa_mensal/30) * prazo_medio
  *
  * @param dataReferencia data-base do cálculo (default = hoje). Títulos com

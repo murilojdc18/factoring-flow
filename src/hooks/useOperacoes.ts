@@ -24,16 +24,25 @@ const QUERY_KEY = ["operacoes"] as const;
  */
 export type CriarOperacaoPayload = ReturnType<typeof operacaoToRow> & {
   titulo_ids: string[];
+  // Parâmetros do cálculo (cálculo server-side canônico): a RPC recalcula
+  // deságio/tarifas/retenção/líquido a partir deles e valida os valores
+  // enviados com tolerância de R$ 0,01 (P0013 em divergência).
+  tarifa_fixa: number;
+  tarifa_por_titulo: number;
+  percentual_retencao: number;
 };
 
 /**
  * Traduz erros da RPC `criar_operacao` (e do Postgres) em mensagens amigáveis.
  * P0001/P0002/P0003/P0010 são os SQLSTATE customizados da função (P0010 é o
  * antigo P0004, trocado para fora da classe reservada P00 do Postgres — ver
- * migration fix_errcode_p0004_para_p0010); P0002/P0010 já vêm em pt-BR do banco,
- * então repassamos a mensagem original. 42501 = sem privilégio; 23505/23503/23502
- * são violações padrão do Postgres. Sempre retorna uma instância de Error para o
- * toast da página exibir `.message`.
+ * migration fix_errcode_p0004_para_p0010); P0013 = divergência entre o valor
+ * enviado e o recalculado no servidor (mensagem do banco indica o campo e os
+ * dois valores); P0014 = título vencido na data da operação (mensagem lista os
+ * números). P0002/P0010/P0013/P0014 já vêm em pt-BR do banco, então repassamos
+ * a mensagem original. P0015 = líquido recalculado negativo. 42501 = sem
+ * privilégio; 23505/23503/23502 são violações padrão do Postgres. Sempre
+ * retorna uma instância de Error para o toast da página exibir `.message`.
  */
 function traduzirErroOperacao(error: {
   code?: string;
@@ -50,6 +59,14 @@ function traduzirErroOperacao(error: {
       );
     case "P0010":
       return new Error(error.message);
+    case "P0013":
+      return new Error(error.message);
+    case "P0014":
+      return new Error(error.message);
+    case "P0015":
+      return new Error(
+        "O valor líquido calculado no servidor é negativo — revise taxa, tarifas e retenção.",
+      );
     case "42501":
       return new Error("Você não tem permissão para criar operações.");
     case "23505":
