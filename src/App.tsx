@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "./pages/NotFound.tsx";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import Placeholder from "./pages/Placeholder";
 import Clientes from "./pages/Clientes";
 import Sacados from "./pages/Sacados";
 import Titulos from "./pages/Titulos";
