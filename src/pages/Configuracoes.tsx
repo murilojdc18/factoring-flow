@@ -24,7 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { useCompliance } from "@/data/mockCompliance";
+import { useCompliance } from "@/hooks/useCompliance";
 import { useClientes } from "@/hooks/useClientes";
 import { useOperacoes } from "@/hooks/useOperacoes";
 import { RiscoBadge } from "@/components/compliance/RiscoBadge";
@@ -54,7 +54,12 @@ export default function Configuracoes() {
   useEffect(() => {
     setEmpresa(empresaSalvo);
   }, [empresaSalvo]);
-  const { politicas, analises, obterAnalisePorAlvo } = useCompliance();
+  const {
+    politicas,
+    analises,
+    obterAnalisePorAlvo,
+    isLoading: carregandoCompliance,
+  } = useCompliance();
   const { clientes } = useClientes();
   const { operacoes } = useOperacoes();
   const totalClientes = clientes.length;
@@ -65,6 +70,7 @@ export default function Configuracoes() {
   const semOps = operacoes.filter(
     (o) => !obterAnalisePorAlvo("Operação", o.id),
   ).length;
+  const criticos = analises.filter((a) => a.nivelRisco === "Crítico").length;
   const altos = analises.filter((a) => a.nivelRisco === "Alto").length;
   const medios = analises.filter((a) => a.nivelRisco === "Médio").length;
   const baixos = analises.filter((a) => a.nivelRisco === "Baixo").length;
@@ -364,7 +370,7 @@ export default function Configuracoes() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {(semClientes > 0 || semOps > 0) && (
+          {!carregandoCompliance && (semClientes > 0 || semOps > 0) && (
             <Alert className="border-warning/40 bg-warning/10">
               <AlertTriangle className="h-4 w-4 text-warning" />
               <AlertTitle>Pendências de análise</AlertTitle>
@@ -395,6 +401,8 @@ export default function Configuracoes() {
                 <span className="text-sm text-muted-foreground">{medios}</span>
                 <RiscoBadge nivel="Alto" />
                 <span className="text-sm text-muted-foreground">{altos}</span>
+                <RiscoBadge nivel="Crítico" />
+                <span className="text-sm text-muted-foreground">{criticos}</span>
               </div>
             </div>
             <div className="rounded-md border bg-muted/30 p-3">
