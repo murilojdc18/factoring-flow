@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { SacadoStatusBadge, ScoreBadge } from "./StatusBadge";
 import { formatBRL, formatNumber } from "@/lib/format";
 import type { Sacado } from "@/data/mockSacados";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
 
 function Stat({
   icon: Icon,
@@ -216,6 +217,11 @@ export function SacadoDetalhes({ sacado }: { sacado: Sacado }) {
           </p>
         </div>
       )}
+      <AnexosSection
+        entidadeTipo="sacado"
+        entidadeId={sacado.id}
+        titulo="Documentos e anexos"
+      />
     </div>
   );
 }

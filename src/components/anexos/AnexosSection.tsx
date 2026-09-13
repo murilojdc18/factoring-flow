@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Paperclip, Upload, Download, Archive, Loader2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,6 +40,8 @@ export function AnexosSection({
   const [carregando, setCarregando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [baixando, setBaixando] = useState<string | null>(null);
+  // Descrição livre (ex.: "Faturamento 2025") aplicada aos arquivos do próximo envio.
+  const [descricao, setDescricao] = useState("");
 
   const podeEnviar =
     !!user &&
@@ -92,6 +95,7 @@ export function AnexosSection({
         file,
         entidadeTipo,
         entidadeId,
+        observacoes: descricao.trim(),
       });
       if (error) {
         falhas++;
@@ -107,6 +111,7 @@ export function AnexosSection({
     setEnviando(false);
     if (inputRef.current) inputRef.current.value = "";
     if (sucesso > 0) {
+      setDescricao("");
       toast({
         title: `${sucesso} arquivo(s) enviado(s)`,
         description: falhas > 0 ? `${falhas} falharam.` : undefined,
@@ -188,8 +193,20 @@ export function AnexosSection({
       </div>
       <Separator className="mb-3" />
 
+      {podeEnviar && (
+        <Input
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          placeholder="Descrição do arquivo (ex.: Faturamento 2025, Contrato social)"
+          maxLength={200}
+          disabled={enviando}
+          className="mb-2 h-8 text-sm"
+        />
+      )}
+
       <p className="mb-2 text-[11px] text-muted-foreground">
-        PDF, PNG, JPG ou JPEG · até {Math.round(TAMANHO_MAX_BYTES / 1024 / 1024)} MB por arquivo
+        PDF, imagem (PNG/JPG), Excel (XLSX/XLS/CSV) ou Word (DOCX) · até{" "}
+        {Math.round(TAMANHO_MAX_BYTES / 1024 / 1024)} MB por arquivo
       </p>
 
       {carregando ? (
@@ -212,7 +229,18 @@ export function AnexosSection({
                 <div className="flex min-w-0 items-center gap-3">
                   <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">
+                    {a.observacoes && (
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {a.observacoes}
+                      </p>
+                    )}
+                    <p
+                      className={
+                        a.observacoes
+                          ? "truncate text-xs text-muted-foreground"
+                          : "truncate text-sm font-medium text-foreground"
+                      }
+                    >
                       {a.nome_arquivo}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">

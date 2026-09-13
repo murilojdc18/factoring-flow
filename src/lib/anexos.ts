@@ -6,14 +6,34 @@ export type AnexoStatus = Database["public"]["Enums"]["anexo_status"];
 
 export const TAMANHO_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 
-export const TIPOS_PERMITIDOS = [
-  "application/pdf",
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-] as const;
+/**
+ * Extensão → MIME canônico. Precisa bater com `allowed_mime_types` do bucket
+ * `anexos` (migration 20260913120000): o Storage recusa content-type fora da
+ * lista. O MIME vem da extensão porque o `file.type` do navegador varia (CSV no
+ * Windows chega como application/vnd.ms-excel ou vazio).
+ */
+const MIME_POR_EXTENSAO: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".xls": "application/vnd.ms-excel",
+  ".csv": "text/csv",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
 
-export const EXTENSOES_PERMITIDAS = [".pdf", ".png", ".jpg", ".jpeg"];
+export const EXTENSOES_PERMITIDAS = Object.keys(MIME_POR_EXTENSAO);
+
+export const TIPOS_PERMITIDOS = Array.from(new Set(Object.values(MIME_POR_EXTENSAO)));
+
+/** MIME canônico do arquivo pela extensão; `null` se o formato não é aceito. */
+export function mimeDoArquivo(nome: string): string | null {
+  const partes = nome.split(".");
+  if (partes.length < 2) return null;
+  const ext = "." + (partes.pop() ?? "").toLowerCase();
+  return MIME_POR_EXTENSAO[ext] ?? null;
+}
 
 export interface Anexo {
   id: string;
@@ -36,12 +56,11 @@ export interface ValidacaoArquivo {
 }
 
 export function validarArquivo(file: File): ValidacaoArquivo {
-  const ext = "." + (file.name.split(".").pop() ?? "").toLowerCase();
-  const tipoOk =
-    (TIPOS_PERMITIDOS as readonly string[]).includes(file.type) ||
-    EXTENSOES_PERMITIDAS.includes(ext);
-  if (!tipoOk) {
-    return { ok: false, erro: "Tipo não permitido. Use PDF, PNG, JPG ou JPEG." };
+  if (!mimeDoArquivo(file.name)) {
+    return {
+      ok: false,
+      erro: "Tipo não permitido. Use PDF, PNG, JPG, XLSX, XLS, CSV ou DOCX.",
+    };
   }
   if (file.size > TAMANHO_MAX_BYTES) {
     return { ok: false, erro: "Arquivo excede o limite de 25 MB." };
@@ -79,11 +98,12 @@ export async function uploadAnexo(params: {
   const userId = userData.user.id;
   const nomeSan = sanitizarNome(file.name);
   const path = `${entidadeTipo}/${entidadeId}/${userId}/${Date.now()}_${nomeSan}`;
+  const mime = mimeDoArquivo(file.name) ?? "application/octet-stream";
 
   const { error: upErr } = await supabase.storage
     .from("anexos")
     .upload(path, file, {
-      contentType: file.type || "application/octet-stream",
+      contentType: mime,
       upsert: false,
     });
 
@@ -94,7 +114,7 @@ export async function uploadAnexo(params: {
     .insert({
       nome_arquivo: file.name,
       storage_path: path,
-      tipo_mime: file.type || "application/octet-stream",
+      tipo_mime: mime,
       tamanho_bytes: file.size,
       entidade_tipo: entidadeTipo,
       entidade_id: entidadeId,

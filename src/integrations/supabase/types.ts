@@ -1040,6 +1040,7 @@ export type Database = {
         | "operacao"
         | "documento"
         | "cobranca"
+        | "sacado"
       anexo_status: "Ativo" | "Arquivado" | "Removido"
       app_role:
         | "administrador"
@@ -1248,6 +1249,7 @@ export const Constants = {
         "operacao",
         "documento",
         "cobranca",
+        "sacado",
       ],
       anexo_status: ["Ativo", "Arquivado", "Removido"],
       app_role: [
