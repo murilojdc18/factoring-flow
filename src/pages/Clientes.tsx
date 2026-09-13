@@ -52,6 +52,7 @@ import {
 import { ClienteDetalhes } from "@/components/clientes/ClienteDetalhes";
 import { formatBRL } from "@/lib/format";
 import { useClientes } from "@/hooks/useClientes";
+import { type ArquivoPendente, enviarAnexosPendentes } from "@/lib/anexos";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 
@@ -105,7 +106,7 @@ export default function Clientes() {
     setDetalheOpen(true);
   }
 
-  async function salvar(data: ClienteFormData) {
+  async function salvar(data: ClienteFormData, anexos: ArquivoPendente[]) {
     try {
       if (editing) {
         await update(editing.id, data);
@@ -114,11 +115,27 @@ export default function Clientes() {
           description: `${data.razaoSocial} foi atualizado com sucesso.`,
         });
       } else {
-        await create(data);
+        const novo = await create(data);
         toast({
           title: "Cliente cadastrado",
           description: `${data.razaoSocial} foi adicionado à carteira.`,
         });
+        if (anexos.length > 0) {
+          const { enviados, falhas } = await enviarAnexosPendentes(
+            "cliente",
+            novo.id,
+            anexos,
+          );
+          if (falhas.length > 0) {
+            toast({
+              title: `${falhas.length} anexo(s) não enviado(s)`,
+              description: `${falhas.map((f) => `${f.nome}: ${f.erro}`).join("; ")}. O cliente foi salvo — reenvie pela edição.`,
+              variant: "destructive",
+            });
+          } else {
+            toast({ title: `${enviados} anexo(s) enviado(s)` });
+          }
+        }
       }
       setFormOpen(false);
       setEditing(null);

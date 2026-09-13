@@ -6,6 +6,16 @@ export type AnexoStatus = Database["public"]["Enums"]["anexo_status"];
 
 export const TAMANHO_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 
+/** Perfis que podem enviar anexos — espelha a policy de INSERT de public.anexos. */
+export const ROLES_ANEXO = [
+  "administrador",
+  "operacional",
+  "financeiro",
+  "compliance",
+  "cobranca",
+  "diretoria",
+] as const;
+
 /**
  * Extensão → MIME canônico. Precisa bater com `allowed_mime_types` do bucket
  * `anexos` (migration 20260913120000): o Storage recusa content-type fora da
@@ -131,6 +141,37 @@ export async function uploadAnexo(params: {
   }
 
   return { data: row as Anexo, error: null };
+}
+
+/** Arquivo escolhido no formulário de cadastro, ainda não enviado. */
+export interface ArquivoPendente {
+  file: File;
+  descricao: string;
+}
+
+/**
+ * Envia em sequência os arquivos escolhidos no cadastro, depois que a entidade
+ * foi criada (o id só existe após o insert). Falha de um arquivo não interrompe
+ * os demais.
+ */
+export async function enviarAnexosPendentes(
+  entidadeTipo: AnexoEntidade,
+  entidadeId: string,
+  pendentes: ArquivoPendente[],
+): Promise<{ enviados: number; falhas: { nome: string; erro: string }[] }> {
+  let enviados = 0;
+  const falhas: { nome: string; erro: string }[] = [];
+  for (const p of pendentes) {
+    const { error } = await uploadAnexo({
+      file: p.file,
+      entidadeTipo,
+      entidadeId,
+      observacoes: p.descricao.trim(),
+    });
+    if (error) falhas.push({ nome: p.file.name, erro: error });
+    else enviados++;
+  }
+  return { enviados, falhas };
 }
 
 export async function listarAnexos(

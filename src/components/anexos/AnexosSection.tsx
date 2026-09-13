@@ -15,6 +15,7 @@ import {
   formatarTamanho,
   gerarUrlDownload,
   listarAnexos,
+  ROLES_ANEXO,
   TAMANHO_MAX_BYTES,
   uploadAnexo,
   validarArquivo,
@@ -44,10 +45,7 @@ export function AnexosSection({
   const [descricao, setDescricao] = useState("");
 
   const podeEnviar =
-    !!user &&
-    roles.some((r) =>
-      ["administrador", "operacional", "financeiro", "compliance", "cobranca", "diretoria"].includes(r),
-    );
+    !!user && roles.some((r) => (ROLES_ANEXO as readonly string[]).includes(r));
   const isAdmin = roles.includes("administrador");
 
   async function recarregar() {

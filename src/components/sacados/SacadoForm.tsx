@@ -21,6 +21,9 @@ import {
   type SacadoStatus,
   type TipoPessoa,
 } from "@/data/mockSacados";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
+import { AnexosPendentes } from "@/components/anexos/AnexosPendentes";
+import type { ArquivoPendente } from "@/lib/anexos";
 
 export type SacadoFormData = Omit<
   Sacado,
@@ -57,7 +60,8 @@ const EMPTY: SacadoFormData = {
 
 interface Props {
   initial?: Sacado | null;
-  onSubmit: (data: SacadoFormData) => void;
+  /** `anexos` só vem preenchido no cadastro; na edição o envio é imediato. */
+  onSubmit: (data: SacadoFormData, anexos: ArquivoPendente[]) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -102,8 +106,11 @@ function Field({
 
 export function SacadoForm({ initial, onSubmit, onCancel }: Props) {
   const [data, setData] = useState<SacadoFormData>(EMPTY);
+  const [anexos, setAnexos] = useState<ArquivoPendente[]>([]);
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
+    setAnexos([]);
     if (initial) {
       const {
         id,
@@ -127,9 +134,15 @@ export function SacadoForm({ initial, onSubmit, onCancel }: Props) {
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit(data);
+        if (salvando) return;
+        setSalvando(true);
+        try {
+          await onSubmit(data, anexos);
+        } finally {
+          setSalvando(false);
+        }
       }}
       className="space-y-6"
     >
@@ -319,15 +332,30 @@ export function SacadoForm({ initial, onSubmit, onCancel }: Props) {
         </Field>
       </Section>
 
+      {initial ? (
+        <AnexosSection
+          entidadeTipo="sacado"
+          entidadeId={initial.id}
+          titulo="Documentos e anexos"
+        />
+      ) : (
+        <AnexosPendentes value={anexos} onChange={setAnexos} disabled={salvando} />
+      )}
+
       <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={salvando}>
           Cancelar
         </Button>
         <Button
           type="submit"
+          disabled={salvando}
           className="bg-gradient-primary text-primary-foreground hover:opacity-90"
         >
-          {initial ? "Salvar alterações" : "Cadastrar sacado"}
+          {salvando
+            ? "Salvando..."
+            : initial
+              ? "Salvar alterações"
+              : "Cadastrar sacado"}
         </Button>
       </div>
     </form>

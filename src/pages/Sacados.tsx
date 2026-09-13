@@ -56,6 +56,7 @@ import {
 import { SacadoDetalhes } from "@/components/sacados/SacadoDetalhes";
 import { formatBRL } from "@/lib/format";
 import { useSacados } from "@/hooks/useSacados";
+import { type ArquivoPendente, enviarAnexosPendentes } from "@/lib/anexos";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 
@@ -112,7 +113,7 @@ export default function Sacados() {
     setDetalheOpen(true);
   }
 
-  async function salvar(data: SacadoFormData) {
+  async function salvar(data: SacadoFormData, anexos: ArquivoPendente[]) {
     try {
       if (editing) {
         await update(editing.id, data);
@@ -121,11 +122,27 @@ export default function Sacados() {
           description: `${data.nome} foi atualizado com sucesso.`,
         });
       } else {
-        await create(data);
+        const novo = await create(data);
         toast({
           title: "Sacado cadastrado",
           description: `${data.nome} foi adicionado.`,
         });
+        if (anexos.length > 0) {
+          const { enviados, falhas } = await enviarAnexosPendentes(
+            "sacado",
+            novo.id,
+            anexos,
+          );
+          if (falhas.length > 0) {
+            toast({
+              title: `${falhas.length} anexo(s) não enviado(s)`,
+              description: `${falhas.map((f) => `${f.nome}: ${f.erro}`).join("; ")}. O sacado foi salvo — reenvie pela edição.`,
+              variant: "destructive",
+            });
+          } else {
+            toast({ title: `${enviados} anexo(s) enviado(s)` });
+          }
+        }
       }
       setFormOpen(false);
       setEditing(null);

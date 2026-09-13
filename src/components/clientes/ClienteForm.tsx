@@ -16,6 +16,9 @@ import {
   type Cliente,
   type ClienteStatus,
 } from "@/data/mockClientes";
+import { AnexosSection } from "@/components/anexos/AnexosSection";
+import { AnexosPendentes } from "@/components/anexos/AnexosPendentes";
+import type { ArquivoPendente } from "@/lib/anexos";
 
 export type ClienteFormData = Omit<
   Cliente,
@@ -53,7 +56,8 @@ const EMPTY: ClienteFormData = {
 
 interface Props {
   initial?: Cliente | null;
-  onSubmit: (data: ClienteFormData) => void;
+  /** `anexos` só vem preenchido no cadastro; na edição o envio é imediato. */
+  onSubmit: (data: ClienteFormData, anexos: ArquivoPendente[]) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -98,8 +102,11 @@ function Field({
 
 export function ClienteForm({ initial, onSubmit, onCancel }: Props) {
   const [data, setData] = useState<ClienteFormData>(EMPTY);
+  const [anexos, setAnexos] = useState<ArquivoPendente[]>([]);
+  const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
+    setAnexos([]);
     if (initial) {
       const { id, totalEmAberto, totalVencido, qtdTitulos, criadoEm, ...rest } =
         initial;
@@ -114,9 +121,15 @@ export function ClienteForm({ initial, onSubmit, onCancel }: Props) {
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        onSubmit(data);
+        if (salvando) return;
+        setSalvando(true);
+        try {
+          await onSubmit(data, anexos);
+        } finally {
+          setSalvando(false);
+        }
       }}
       className="space-y-6"
     >
@@ -320,15 +333,30 @@ export function ClienteForm({ initial, onSubmit, onCancel }: Props) {
         </Field>
       </Section>
 
+      {initial ? (
+        <AnexosSection
+          entidadeTipo="cliente"
+          entidadeId={initial.id}
+          titulo="Documentos e anexos"
+        />
+      ) : (
+        <AnexosPendentes value={anexos} onChange={setAnexos} disabled={salvando} />
+      )}
+
       <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={salvando}>
           Cancelar
         </Button>
         <Button
           type="submit"
+          disabled={salvando}
           className="bg-gradient-primary text-primary-foreground hover:opacity-90"
         >
-          {initial ? "Salvar alterações" : "Cadastrar cliente"}
+          {salvando
+            ? "Salvando..."
+            : initial
+              ? "Salvar alterações"
+              : "Cadastrar cliente"}
         </Button>
       </div>
     </form>
