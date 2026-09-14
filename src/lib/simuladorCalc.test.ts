@@ -84,17 +84,18 @@ describe("calcularSimulacao — caso normal", () => {
     const r = calcularSimulacao(titulos, PARAMETROS_DEFAULT);
 
     // bruto 30000 | prazo (10·10000 + 40·20000)/30000 = 30
-    // taxaDia 3.5/30 | deságio 30000·(taxaDia/100)·30 = 1050
-    // tarifas 150 + 25·2 = 200 | retenção 30000·5% = 1500
-    // líquido 30000 − 1050 − 200 − 1500 = 27250
+    // deságio POR TÍTULO: T-1 10d → % round3(10·3.5/30)=1.167 → 116,70
+    //                     T-2 40d → % round3(40·3.5/30)=4.667 → 933,40
+    // deságio 1050,10 | tarifas 150 + 25·2 = 200 | retenção 30000·5% = 1500
+    // líquido 30000 − 1050,10 − 200 − 1500 = 27249,90
     expect(r.quantidadeTitulos).toBe(2);
     expect(r.valorBruto).toBe(30000);
     expect(r.prazoMedioPonderado).toBe(30);
     expect(r.taxaDiariaEquivalente).toBeCloseTo(3.5 / 30, 10);
-    expect(r.valorDesagio).toBe(1050);
+    expect(r.valorDesagio).toBe(1050.1);
     expect(r.valorTarifas).toBe(200);
     expect(r.valorRetencao).toBe(1500);
-    expect(r.valorLiquido).toBe(27250);
+    expect(r.valorLiquido).toBe(27249.9);
     expect(r.liquidoInvalido).toBe(false);
     expect(r.titulosVencidosIgnorados).toEqual([]);
   });
@@ -165,15 +166,15 @@ describe("calcularSimulacao — Regra B: vencidos + ordem com A", () => {
 
     // só OK-1 (20d, 10000) e OK-2 (60d, 30000) entram
     // bruto 40000 | prazo (20·10000 + 60·30000)/40000 = 50
-    // deságio 40000·((3.5/30)/100)·50 = 2333.33
+    // deságio: OK-1 % 2.333 → 233,30 | OK-2 % 7.000 → 2100,00 | total 2333,30
     // tarifas 150 + 25·2 = 200 | retenção 40000·5% = 2000
-    // líquido 40000 − 2333.33… − 200 − 2000 = 35466.67
+    // líquido 40000 − 2333,30 − 200 − 2000 = 35466,70
     expect(r.quantidadeTitulos).toBe(2);
     expect(r.valorBruto).toBe(40000);
     expect(r.prazoMedioPonderado).toBe(50);
-    expect(r.valorDesagio).toBe(2333.33);
+    expect(r.valorDesagio).toBe(2333.3);
     expect(r.valorRetencao).toBe(2000);
-    expect(r.valorLiquido).toBe(35466.67);
+    expect(r.valorLiquido).toBe(35466.7);
     expect(r.liquidoInvalido).toBe(false);
     expect(r.titulosVencidosIgnorados).toEqual(["V-1", "V-2"]);
   });
@@ -188,10 +189,10 @@ describe("calcularSimulacao — Regra C: piso de 1 dia", () => {
 
     const r = calcularSimulacao(titulos, PARAMETROS_DEFAULT);
 
-    // prazo real = 0, mas deságio usa max(1, 0) = 1 dia:
-    // 10000 · ((3.5/30)/100) · 1 = 11.666… → arredonda para 11.67.
+    // prazo real = 0, mas o % do título usa max(1, 0) = 1 dia:
+    // % round3(1·3.5/30) = 0.117 → 10000 · 0.117% = 11,70.
     // Se usasse o prazo real (0), o deságio seria 0.
-    expect(r.valorDesagio).toBe(11.67);
+    expect(r.valorDesagio).toBe(11.7);
     expect(r.valorDesagio).toBeGreaterThan(0);
   });
 
@@ -362,5 +363,105 @@ describe("calcularSimulacao — fragilidades técnicas", () => {
     expect(temNoMax2Casas(r.valorTarifas)).toBe(true);
     expect(temNoMax2Casas(r.valorRetencao)).toBe(true);
     expect(temNoMax2Casas(r.valorLiquido)).toBe(true);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────
+describe("calcularSimulacao — deságio por título (regra dos documentos)", () => {
+  it("detalha cada título: dias reais, % com 3 casas, juros com 2 casas e líquido", () => {
+    const titulos = [
+      makeTitulo({ numero: "T-1", valorFace: 10000, dataVencimento: isoEmDias(10) }),
+      makeTitulo({ numero: "T-2", valorFace: 20000, dataVencimento: isoEmDias(40) }),
+    ];
+
+    const r = calcularSimulacao(titulos, PARAMETROS_DEFAULT);
+
+    expect(r.titulosCalculados).toEqual([
+      {
+        numero: "T-1",
+        valorFace: 10000,
+        dataVencimento: isoEmDias(10),
+        dias: 10,
+        percentual: 1.167,
+        juros: 116.7,
+        liquido: 9883.3,
+      },
+      {
+        numero: "T-2",
+        valorFace: 20000,
+        dataVencimento: isoEmDias(40),
+        dias: 40,
+        percentual: 4.667,
+        juros: 933.4,
+        liquido: 19066.6,
+      },
+    ]);
+  });
+
+  it("arredonda o % ANTES dos juros: 11.260,00 em 23 dias a 4% → 3,067% → 345,34 (não 345,31)", () => {
+    const titulos = [
+      makeTitulo({ numero: "R-1", valorFace: 11260, dataVencimento: isoEmDias(23) }),
+    ];
+    const params: SimuladorParametros = {
+      taxaFatorMensal: 4,
+      tarifaFixa: 0,
+      tarifaPorTitulo: 0,
+      percentualRetencao: 0,
+    };
+
+    const r = calcularSimulacao(titulos, params);
+
+    expect(r.titulosCalculados[0].percentual).toBe(3.067);
+    expect(r.titulosCalculados[0].juros).toBe(345.34);
+    expect(r.valorDesagio).toBe(345.34);
+  });
+
+  it("deságio total é exatamente a soma dos juros dos títulos", () => {
+    const titulos = [
+      makeTitulo({ numero: "S-1", valorFace: 2161.4, dataVencimento: isoEmDias(30) }),
+      makeTitulo({ numero: "S-2", valorFace: 510.15, dataVencimento: isoEmDias(32) }),
+      makeTitulo({ numero: "S-3", valorFace: 693, dataVencimento: isoEmDias(92) }),
+    ];
+    const params: SimuladorParametros = {
+      taxaFatorMensal: 4,
+      tarifaFixa: 0,
+      tarifaPorTitulo: 0,
+      percentualRetencao: 0,
+    };
+
+    const r = calcularSimulacao(titulos, params);
+    const somaCentavos = r.titulosCalculados.reduce(
+      (acc, t) => acc + Math.round(t.juros * 100),
+      0,
+    );
+
+    // 86,46 + 21,77 + 85,01 (valores do termo aditivo 49-26)
+    expect(r.titulosCalculados.map((t) => t.juros)).toEqual([86.46, 21.77, 85.01]);
+    expect(Math.round(r.valorDesagio * 100)).toBe(somaCentavos);
+    expect(r.valorDesagio).toBe(193.24);
+  });
+
+  it("piso de 1 dia vale POR TÍTULO; dias exibidos continuam os reais", () => {
+    const titulos = [
+      makeTitulo({ numero: "H-1", valorFace: 10000, dataVencimento: isoEmDias(0) }),
+    ];
+
+    const r = calcularSimulacao(titulos, PARAMETROS_DEFAULT);
+
+    expect(r.titulosCalculados[0].dias).toBe(0);
+    expect(r.titulosCalculados[0].percentual).toBe(0.117);
+    expect(r.titulosCalculados[0].juros).toBe(11.7);
+  });
+
+  it("vencidos não aparecem em titulosCalculados", () => {
+    const titulos = [
+      makeTitulo({ numero: "V-1", dataVencimento: isoEmDias(-1) }),
+      makeTitulo({ numero: "OK-1", dataVencimento: isoEmDias(5) }),
+    ];
+
+    const r = calcularSimulacao(titulos, PARAMETROS_DEFAULT);
+
+    expect(r.titulosCalculados.map((t) => t.numero)).toEqual(["OK-1"]);
+    expect(r.titulosVencidosIgnorados).toEqual(["V-1"]);
   });
 });

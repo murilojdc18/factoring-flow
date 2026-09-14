@@ -16,17 +16,19 @@ Todas as decisões estruturais do cálculo **confirmam o comportamento atual do 
 |---|---------|---------------|
 | 1 | Regime de juros | **Simples** (não composto) |
 | 2 | Conversão mês → dia | **Dividir por 30** (ano comercial 360) |
-| 3 | Granularidade do deságio | **Por lote**, com prazo médio ponderado pelo valor de face |
+| 3 | Granularidade do deságio | **Por título** (revisto em 2026-09-14 — antes "por lote"). Igual aos termos aditivos que a empresa emite; conferido centavo a centavo com as operações 49-26 e 57-26 |
 | 4 | Base da retenção | **Sobre o valor bruto** (não sobre o líquido) |
 | 5 | Ordem das deduções | **Paralelas** — deságio, tarifa e retenção todas descontam do bruto |
 | 16 | Tipos de tarifa | **Tarifa fixa por operação + tarifa por título.** Sem tarifa percentual |
 | 17 | Granularidade da taxa | **Taxa única para o lote** (não por título nem por sacado) |
 
-**Fórmula resumida (inalterada):**
+**Fórmula resumida (v4, 2026-09-14 — deságio por título):**
 valorBruto         = Σ valorFace dos títulos selecionados
-prazoMedio         = Σ (diasAteVencimento × valorFace) / valorBruto
+prazoMedio         = Σ (diasAteVencimento × valorFace) / valorBruto   (informativo)
 taxaDiaria         = taxaFatorMensal / 30
-valorDesagio       = valorBruto × (taxaDiaria / 100) × prazoMedio
+percentual_i       = round3(max(1, dias_i) × taxaFatorMensal / 30)
+juros_i            = round2(valorFace_i × percentual_i / 100)
+valorDesagio       = Σ juros_i
 valorTarifas       = tarifaFixa + tarifaPorTitulo × quantidadeTitulos
 valorRetencao      = valorBruto × (percentualRetencao / 100)
 valorLiquido       = valorBruto − valorDesagio − valorTarifas − valorRetencao
@@ -52,6 +54,7 @@ Estes 7 ajustes precisam entrar no código. Cada um foi mapeado para qual arquiv
 ### C — Piso mínimo de 1 dia no prazo
 - **Comportamento atual:** título vencendo hoje → prazo zero → deságio zero.
 - **Comportamento alvo:** se o prazo médio ponderado calcular menos de 1 dia, **usar 1 como mínimo** no cálculo do deságio. Mantém o `prazoMedio` exibido como o valor real (pode ser fracionário); só o deságio usa o piso.
+- **Revisão v4 (2026-09-14):** com o deságio por título, o piso de 1 dia vale **por título** (no percentual); os dias exibidos continuam os reais.
 - **Onde:** `src/lib/simuladorCalc.ts`
 - **Origem:** Decisão 10 (Opção B — cobra 1 dia mínimo)
 

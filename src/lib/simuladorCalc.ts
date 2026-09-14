@@ -8,6 +8,17 @@ export interface SimuladorParametros {
   percentualRetencao: number; // % sobre valor bruto (ex: 5)
 }
 
+/** Detalhe do deságio de um título válido (mesma linha do termo aditivo). */
+export interface TituloCalculado {
+  numero: string;
+  valorFace: number;
+  dataVencimento: string;
+  dias: number; // dias reais até o vencimento (pode ser 0)
+  percentual: number; // % do período, 3 casas (usa piso de 1 dia)
+  juros: number; // deságio do título, 2 casas
+  liquido: number; // valorFace − juros
+}
+
 export interface SimuladorResultado {
   quantidadeTitulos: number;
   valorBruto: number;
@@ -19,6 +30,7 @@ export interface SimuladorResultado {
   taxaDiariaEquivalente: number; // % a.d.
   liquidoInvalido: boolean; // true quando valorLiquido < 0
   titulosVencidosIgnorados: string[]; // "numero" dos títulos vencidos descartados
+  titulosCalculados: TituloCalculado[]; // títulos válidos, na ordem de entrada
 }
 
 export const PARAMETROS_DEFAULT: SimuladorParametros = {
@@ -42,7 +54,10 @@ const san = (n: number): number => (Number.isNaN(n) || n < 0 ? 0 : n);
  * tolerância de R$ 0,01; em divergência, vale o servidor. A paridade entre as
  * duas implementações é garantida pelas fixtures compartilhadas em
  * src/test/fixtures/simulador-paridade.json.
- * Deságio: valor_bruto * (taxa_mensal/30) * prazo_medio
+ *
+ * Deságio POR TÍTULO (v4, igual aos termos aditivos da empresa):
+ *   % = round3(max(1, dias) × taxa ÷ 30); juros = round2(valor × % ÷ 100);
+ *   deságio = Σ juros.
  *
  * @param dataReferencia data-base do cálculo (default = hoje). Títulos com
  *   vencimento anterior a essa data são descartados (Regra B) e devolvidos
@@ -90,6 +105,7 @@ export function calcularSimulacao(
       taxaDiariaEquivalente,
       liquidoInvalido: false,
       titulosVencidosIgnorados,
+      titulosCalculados: [],
     };
   }
 
@@ -106,11 +122,33 @@ export function calcularSimulacao(
         ) / valorBruto
       : 0;
 
-  // Regra C: piso de 1 dia SÓ no cálculo do deságio. O prazo retornado
-  // continua sendo o valor real (pode ser fracionário ou zero).
-  const prazoParaDesagio = Math.max(1, prazoMedioPonderado);
-  const valorDesagio =
-    valorBruto * (taxaDiariaEquivalente / 100) * prazoParaDesagio;
+  // Deságio por título. Conta em inteiros (centavos × milésimos de %) para
+  // arredondar igual ao numeric do Postgres: valor_face é numeric(15,2) e, com
+  // taxa de até 2 casas, dias × taxa × 1000 ÷ 30 nunca cai exatamente em meio
+  // milésimo. Regra C por título: piso de 1 dia SÓ no %; `dias` é o real.
+  let desagioCentavos = 0;
+  const titulosCalculados: TituloCalculado[] = titulosValidos.map((t) => {
+    const dias = daysUntil(t.dataVencimento, dataReferencia);
+    const pctMilesimos = Math.round(
+      (Math.max(1, dias) * p.taxaFatorMensal * 1000) / 30,
+    );
+    const valorCentavos = Math.round(t.valorFace * 100);
+    // round2(valor × % ÷ 100), half away from zero (valores são >= 0).
+    const jurosCentavos = Math.floor(
+      (valorCentavos * pctMilesimos + 50_000) / 100_000,
+    );
+    desagioCentavos += jurosCentavos;
+    return {
+      numero: t.numero,
+      valorFace: t.valorFace,
+      dataVencimento: t.dataVencimento,
+      dias,
+      percentual: pctMilesimos / 1000,
+      juros: jurosCentavos / 100,
+      liquido: (valorCentavos - jurosCentavos) / 100,
+    };
+  });
+  const valorDesagio = desagioCentavos / 100;
 
   const valorTarifas = p.tarifaFixa + p.tarifaPorTitulo * quantidadeTitulos;
 
@@ -133,5 +171,6 @@ export function calcularSimulacao(
     taxaDiariaEquivalente,
     liquidoInvalido: valorLiquidoArredondado < 0,
     titulosVencidosIgnorados,
+    titulosCalculados,
   };
 }

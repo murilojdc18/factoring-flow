@@ -490,9 +490,9 @@ export default function OperacaoSimulador() {
               <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
                 <p className="mb-1 font-medium text-foreground">Memória de cálculo</p>
                 <p>
-                  Deságio = {formatBRL(resultado.valorBruto)} ×{" "}
-                  {resultado.taxaDiariaEquivalente.toFixed(4)}% ×{" "}
-                  {resultado.prazoMedioPonderado.toFixed(1)}d
+                  Deságio = soma por título de valor × % do período (% = dias ×{" "}
+                  {params.taxaFatorMensal}% ÷ 30, 3 casas) ={" "}
+                  {formatBRL(resultado.valorDesagio)}
                 </p>
                 <p>
                   Tarifas = {formatBRL(params.tarifaFixa)} +{" "}

@@ -78,6 +78,8 @@ describe("paridade simulador — fixtures compartilhadas TS ↔ plpgsql", () => 
       expect(r.taxaDiariaEquivalente).toBeCloseTo(e.taxa_diaria_equivalente, 9);
       expect(r.liquidoInvalido).toBe(e.liquido_invalido);
       expect(r.titulosVencidosIgnorados).toEqual(e.titulos_vencidos_ignorados);
+      // Juros de cada título válido, na ordem de entrada (regra por título).
+      expect(r.titulosCalculados.map((t) => t.juros + 0)).toEqual(e.juros_por_titulo);
     });
   }
 });
