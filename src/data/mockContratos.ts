@@ -5,7 +5,9 @@ export type ContratoTipo =
   | "Borderô de títulos"
   | "Termo de recompra"
   | "Notificação ao sacado"
-  | "Recibo de pagamento";
+  | "Recibo de pagamento"
+  | "Termo aditivo de fomento mercantil"
+  | "Carta de cessão de crédito";
 
 export type ContratoStatus = "Rascunho" | "Ativo" | "Inativo";
 
@@ -28,6 +30,8 @@ export const TIPOS_CONTRATO: ContratoTipo[] = [
   "Termo de recompra",
   "Notificação ao sacado",
   "Recibo de pagamento",
+  "Termo aditivo de fomento mercantil",
+  "Carta de cessão de crédito",
 ];
 
 export const STATUS_CONTRATO: ContratoStatus[] = ["Rascunho", "Ativo", "Inativo"];

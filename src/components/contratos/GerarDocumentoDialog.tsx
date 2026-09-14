@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileSignature, Sparkles } from "lucide-react";
+import { Download, FileSignature, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,16 +36,30 @@ import {
   montarPlaceholders,
   preencherTexto,
 } from "@/lib/preencherDocumento";
+import {
+  isTipoDocumentoOficial,
+  montarDadosDocumentoOficial,
+  textoDocumentoOficial,
+  TIPO_CARTA_CESSAO,
+  TIPO_TERMO_ADITIVO,
+  type DadosDocumentoOficial,
+} from "@/lib/documentosOficiais/dados";
+import { gerarPdfDocumentoOficial } from "@/lib/documentosOficiais/pdf";
+import { sugerirNomeArquivo } from "@/lib/exportarPdf";
 import { formatBR } from "@/lib/dateUtils";
 
-/** Tipos de documento suportados pelo gerador. */
+/**
+ * Tipos de documento suportados pelo gerador. Termo aditivo e carta de cessão
+ * são os documentos OFICIAIS (PDF no layout da empresa, a partir de
+ * `documentosOficiais/`); borderô e recibo seguem o modelo de texto.
+ */
 const TIPOS_GERAVEIS = [
-  "Contrato de cessão de direitos creditórios",
-  "Aditivo de operação",
+  TIPO_TERMO_ADITIVO,
+  TIPO_CARTA_CESSAO,
   "Borderô de títulos",
   "Recibo de pagamento",
 ] as const;
-type TipoGeravel = (typeof TIPOS_GERAVEIS)[number];
+export type TipoGeravel = (typeof TIPOS_GERAVEIS)[number];
 
 interface Props {
   open: boolean;
@@ -71,15 +85,16 @@ export function GerarDocumentoDialog({
   const { sacados } = useSacados();
   const { create } = useDocumentosGerados();
   const { dados: empresa } = useDadosEmpresa();
-  const [tipo, setTipo] = useState<TipoGeravel>(
-    initialTipo ?? "Contrato de cessão de direitos creditórios",
-  );
+  const [tipo, setTipo] = useState<TipoGeravel>(initialTipo ?? TIPO_TERMO_ADITIVO);
   const [modeloId, setModeloId] = useState<string>("");
   const [operacaoId, setOperacaoId] = useState<string>("");
   const [textoFinal, setTextoFinal] = useState<string>("");
+  const [dadosOficiais, setDadosOficiais] = useState<DadosDocumentoOficial | null>(null);
   const [observacoes, setObservacoes] = useState<string>("");
   const [status, setStatus] = useState<DocumentoStatus>("Rascunho");
   const [isCreating, setIsCreating] = useState(false);
+
+  const oficial = isTipoDocumentoOficial(tipo);
 
   // Modelos ativos do tipo selecionado
   const modelosDoTipo = useMemo(
@@ -95,14 +110,21 @@ export function GerarDocumentoDialog({
   // Reset ao abrir
   useEffect(() => {
     if (open) {
-      setTipo(initialTipo ?? "Contrato de cessão de direitos creditórios");
+      setTipo(initialTipo ?? TIPO_TERMO_ADITIVO);
       setModeloId("");
       setOperacaoId(initialOperacaoId ?? "");
       setTextoFinal("");
+      setDadosOficiais(null);
       setObservacoes("");
       setStatus("Rascunho");
     }
   }, [open, initialTipo, initialOperacaoId]);
+
+  // Trocar tipo/operação invalida o preview já gerado.
+  useEffect(() => {
+    setTextoFinal("");
+    setDadosOficiais(null);
+  }, [tipo, operacaoId]);
 
   // Auto-seleciona o primeiro modelo do tipo
   useEffect(() => {
@@ -119,6 +141,18 @@ export function GerarDocumentoDialog({
     const titulosDaOperacao = titulos.filter((t) =>
       operacaoSelecionada.titulosIds.includes(t.id),
     );
+    if (isTipoDocumentoOficial(tipo)) {
+      const dados = montarDadosDocumentoOficial(
+        operacaoSelecionada,
+        cedente,
+        titulosDaOperacao,
+        sacados,
+        empresa,
+      );
+      setDadosOficiais(dados);
+      setTextoFinal(textoDocumentoOficial(tipo, dados));
+      return;
+    }
     const valores = montarPlaceholders(
       operacaoSelecionada,
       cedente,
@@ -126,8 +160,18 @@ export function GerarDocumentoDialog({
       sacados,
       empresa,
     );
-    const texto = preencherTexto(modeloSelecionado.texto, valores);
-    setTextoFinal(texto);
+    setTextoFinal(preencherTexto(modeloSelecionado.texto, valores));
+  };
+
+  const handleVisualizarPdf = () => {
+    if (!dadosOficiais || !isTipoDocumentoOficial(tipo) || !operacaoSelecionada) return;
+    gerarPdfDocumentoOficial(tipo, dadosOficiais).save(
+      sugerirNomeArquivo({
+        tipoDocumento: tipo,
+        operacaoNumero: operacaoSelecionada.numero,
+        operacaoId: operacaoSelecionada.id,
+      } as DocumentoGerado),
+    );
   };
 
   const handleSalvar = async () => {
@@ -146,6 +190,7 @@ export function GerarDocumentoDialog({
         status,
         textoFinal,
         observacoes,
+        ...(oficial && dadosOficiais ? { dadosOficiais } : {}),
       });
       onSalvar(doc);
     } catch (e) {
@@ -158,7 +203,8 @@ export function GerarDocumentoDialog({
   };
 
   const podeGerarPreview = !!modeloSelecionado && !!operacaoSelecionada;
-  const podeSalvar = podeGerarPreview && textoFinal.trim().length > 0;
+  const podeSalvar =
+    podeGerarPreview && textoFinal.trim().length > 0 && (!oficial || !!dadosOficiais);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -166,19 +212,19 @@ export function GerarDocumentoDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSignature className="h-5 w-5 text-primary" />
-            Gerar documento proforma
+            Gerar documento da operação
           </DialogTitle>
           <DialogDescription>
-            Escolha tipo, modelo e operação. O preview gerado pode ser editado
-            antes de salvar — o modelo original não é alterado.
+            Escolha tipo, modelo e operação. Termo aditivo e carta de cessão saem
+            no layout oficial; os demais podem ser editados antes de salvar.
           </DialogDescription>
         </DialogHeader>
 
         <Alert>
-          <AlertTitle>Documento proforma</AlertTitle>
+          <AlertTitle>Revise antes de enviar</AlertTitle>
           <AlertDescription>
-            O texto resultante é uma minuta editável e deve passar por revisão
-            jurídica antes de qualquer formalização.
+            Confira dados e valores antes de enviar ao cliente. O texto da carta de
+            cessão está pendente de revisão do advogado.
           </AlertDescription>
         </Alert>
 
@@ -268,25 +314,48 @@ export function GerarDocumentoDialog({
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {oficial && dadosOficiais && (
+            <Button onClick={handleVisualizarPdf} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Baixar PDF para conferir
+            </Button>
+          )}
           <Button
             onClick={handleGerarPreview}
             disabled={!podeGerarPreview}
             variant="outline"
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            {textoFinal ? "Regenerar a partir do modelo" : "Gerar preview preenchido"}
+            {textoFinal ? "Gerar novamente" : "Gerar preview preenchido"}
           </Button>
         </div>
+
+        {dadosOficiais && dadosOficiais.pendencias.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTitle>Pendências antes de emitir</AlertTitle>
+            <AlertDescription>
+              <ul className="list-disc pl-4">
+                {dadosOficiais.pendencias.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Separator />
 
         {/* Preview / edição */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="textoFinal">Texto final (editável)</Label>
+            <Label htmlFor="textoFinal">
+              {oficial ? "Conteúdo do documento (somente leitura)" : "Texto final (editável)"}
+            </Label>
             <span className="text-xs text-muted-foreground">
-              Edições aqui não alteram o modelo original.
+              {oficial
+                ? "Para corrigir, ajuste o cadastro ou a operação e gere novamente."
+                : "Edições aqui não alteram o modelo original."}
             </span>
           </div>
           <Textarea
@@ -294,6 +363,7 @@ export function GerarDocumentoDialog({
             rows={16}
             className="font-mono text-xs"
             value={textoFinal}
+            readOnly={oficial}
             onChange={(e) => setTextoFinal(e.target.value)}
             placeholder="Gere o preview para ver o texto preenchido aqui."
           />

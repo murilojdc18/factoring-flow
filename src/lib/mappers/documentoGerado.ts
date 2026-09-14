@@ -3,7 +3,11 @@ import type {
   DocumentoStatus,
 } from "@/data/mockDocumentosGerados";
 import type { ContratoTipo } from "@/data/mockContratos";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
+import {
+  isTipoDocumentoOficial,
+  type DadosDocumentoOficial,
+} from "@/lib/documentosOficiais/dados";
 
 /**
  * Mapper de documentos gerados (sub-tarefa 2.5b).
@@ -63,7 +67,21 @@ export function rowToDocumentoGerado(
     status: (row.status as DocumentoStatus) ?? "Rascunho",
     textoFinal: row.conteudo ?? "",
     observacoes: row.observacoes ?? "",
+    dadosOficiais: lerDadosOficiais(row),
   };
+}
+
+/**
+ * `variaveis_preenchidas` só é lida para os tipos oficiais (termo aditivo /
+ * carta de cessão), onde guarda o snapshot formatado do PDF. Nos demais tipos
+ * continua ignorada (default '{}').
+ */
+function lerDadosOficiais(row: DocumentoGeradoRow): DadosDocumentoOficial | undefined {
+  const v = row.variaveis_preenchidas as { versao?: number } | null;
+  if (!isTipoDocumentoOficial(row.tipo_documento ?? "") || !v || v.versao !== 1) {
+    return undefined;
+  }
+  return v as unknown as DadosDocumentoOficial;
 }
 
 /**
@@ -89,5 +107,9 @@ export function documentoGeradoToRow(
     operacao_numero: doc.operacaoNumero ?? "",
     status: doc.status ?? "Rascunho",
     tipo_documento: doc.tipoDocumento ?? "",
+    // Snapshot do PDF oficial: boundary cast (objeto tipado → coluna jsonb).
+    ...(doc.dadosOficiais
+      ? { variaveis_preenchidas: doc.dadosOficiais as unknown as Json }
+      : {}),
   };
 }

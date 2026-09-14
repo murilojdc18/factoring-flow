@@ -1,4 +1,5 @@
 import { ContratoTipo } from "@/data/mockContratos";
+import type { DadosDocumentoOficial } from "@/lib/documentosOficiais/dados";
 
 export type DocumentoStatus =
   | "Rascunho"
@@ -27,6 +28,11 @@ export interface DocumentoGerado {
   status: DocumentoStatus;
   textoFinal: string;
   observacoes: string;
+  /**
+   * Snapshot formatado dos documentos oficiais (termo aditivo / carta de
+   * cessão) — o PDF re-renderiza a partir dele. Ausente nos demais tipos.
+   */
+  dadosOficiais?: DadosDocumentoOficial;
 }
 
 export const mockDocumentosGerados: DocumentoGerado[] = [];

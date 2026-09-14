@@ -45,7 +45,11 @@ import { formatBRL } from "@/lib/format";
 import { formatBR } from "@/lib/dateUtils";
 import { AnexosSection } from "@/components/anexos/AnexosSection";
 import { toast } from "sonner";
-import { GerarDocumentoDialog } from "@/components/contratos/GerarDocumentoDialog";
+import {
+  GerarDocumentoDialog,
+  type TipoGeravel,
+} from "@/components/contratos/GerarDocumentoDialog";
+import { TIPO_CARTA_CESSAO, TIPO_TERMO_ADITIVO } from "@/lib/documentosOficiais/dados";
 import { DocumentoGerado } from "@/data/mockDocumentosGerados";
 import { RecompraDialog } from "@/components/recompras/RecompraDialog";
 import { RecompraStatusBadge } from "@/components/recompras/RecompraStatusBadge";
@@ -97,9 +101,7 @@ export default function OperacaoDetalhes() {
   const navigate = useNavigate();
 
   const [gerarTipo, setGerarTipo] = useState<
-    | "Contrato de cessão de direitos creditórios"
-    | "Aditivo de operação"
-    | "Borderô de títulos"
+    | TipoGeravel
     | null
   >(null);
 
@@ -378,11 +380,11 @@ export default function OperacaoDetalhes() {
                 <Button variant="outline" size="sm" onClick={() => setGerarTipo("Borderô de títulos")}>
                   <FileText className="mr-2 h-4 w-4" /> Borderô
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setGerarTipo("Contrato de cessão de direitos creditórios")}>
-                  <FileSignature className="mr-2 h-4 w-4" /> Contrato
+                <Button variant="outline" size="sm" onClick={() => setGerarTipo(TIPO_TERMO_ADITIVO)}>
+                  <FilePlus2 className="mr-2 h-4 w-4" /> Termo aditivo
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setGerarTipo("Aditivo de operação")}>
-                  <FilePlus2 className="mr-2 h-4 w-4" /> Aditivo
+                <Button variant="outline" size="sm" onClick={() => setGerarTipo(TIPO_CARTA_CESSAO)}>
+                  <FileSignature className="mr-2 h-4 w-4" /> Carta de cessão
                 </Button>
                 {TRANSICOES_UI.filter(
                   (t) => t.destrutivo && podeFazer(t.alvo),

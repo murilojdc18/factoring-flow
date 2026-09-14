@@ -1,6 +1,12 @@
 import jsPDF from "jspdf";
 import { DocumentoGerado } from "@/data/mockDocumentosGerados";
 import { formatBR } from "@/lib/dateUtils";
+import {
+  isTipoDocumentoOficial,
+  TIPO_CARTA_CESSAO,
+  TIPO_TERMO_ADITIVO,
+} from "@/lib/documentosOficiais/dados";
+import { gerarPdfDocumentoOficial } from "@/lib/documentosOficiais/pdf";
 
 const AVISO_PROFORMA =
   "Documento proforma gerado automaticamente. Revisão jurídica obrigatória antes de assinatura ou uso externo.";
@@ -10,6 +16,9 @@ const AVISO_PROFORMA =
  */
 export function sugerirNomeArquivo(doc: DocumentoGerado): string {
   const op = doc.operacaoNumero || doc.operacaoId;
+  // Mesmo padrão de nome dos arquivos que a empresa já usa (termo_aditivo_49-26.pdf).
+  if (doc.tipoDocumento === TIPO_TERMO_ADITIVO) return `termo_aditivo_${op}.pdf`;
+  if (doc.tipoDocumento === TIPO_CARTA_CESSAO) return `carta_cessao_${op}.pdf`;
   const slug = (() => {
     const t = doc.tipoDocumento.toLowerCase();
     if (t.includes("cessão") || t.includes("cessao")) return "contrato-cessao";
@@ -31,6 +40,14 @@ export function exportarDocumentoPdf(
   doc: DocumentoGerado,
   empresaNome: string,
 ): void {
+  // Documentos oficiais: layout próprio, a partir do snapshot salvo.
+  if (doc.dadosOficiais && isTipoDocumentoOficial(doc.tipoDocumento)) {
+    gerarPdfDocumentoOficial(doc.tipoDocumento, doc.dadosOficiais).save(
+      sugerirNomeArquivo(doc),
+    );
+    return;
+  }
+
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
