@@ -13,7 +13,7 @@ mesmas regras de permissão do banco (RLS) que valem na tela.
 |---|---|---|
 | 1 | Murilo | Criar seu usuário no Supabase Auth (se ainda não existir) |
 | 2 | Murilo | Dar ao seu usuário os perfis **`diretoria` + `operacional` + `cobranca`** (ver `PERMISSOES.md`) |
-| 3 | Murilo | Confirmar que a migration `20260913150000_rls_operacoes_somente_via_rpc` está aplicada |
+| 3 | Murilo | ✅ Migrations aplicadas em produção (segurança de operações, cálculo por título, modelos oficiais) — 2026-09-14 |
 | 4 | Murilo | Enviar a você, por canal separado: **URL do projeto** e **chave publicável** (não são segredos, mas não vão no zip) |
 | 5 | Você | Seguir `INSTALACAO.md` e rodar o teste de conexão |
 
@@ -29,7 +29,7 @@ mesmas regras de permissão do banco (RLS) que valem na tela.
 | `OPERACOES.md` | Funções do servidor: simular, criar, mudar status, editar operação |
 | `FLUXOS.md` | Passo a passo do dia a dia (cedente → título → operação → documento) |
 | `ANEXOS.md` | Enviar e baixar arquivos (contrato social, faturamento…) |
-| `DOCUMENTOS.md` | Gerar contrato / aditivo / carta a partir dos modelos |
+| `DOCUMENTOS.md` | Termo aditivo e carta de cessão (gerados na tela) e demais documentos |
 | `schema/database.types.ts` | Esquema completo gerado do banco (fonte da verdade dos campos) |
 | `exemplos/conectar.mjs` | Script de teste: login + perfis + contagens |
 | `.env.example` | Modelo do arquivo de credenciais |

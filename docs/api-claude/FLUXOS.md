@@ -30,8 +30,9 @@ Checar duplicidade por `documento`.
 3. Definir `numero` da operação (conferir que não existe) e `responsavel_interno`.
 4. Com o "sim" do usuário: **criar** (`criar_operacao`) com os mesmos parâmetros
    da simulação.
-5. **Gerar documentos** (contrato de cessão / termo aditivo / carta de cessão)
-   — `DOCUMENTOS.md`.
+5. **Termo aditivo e carta de cessão**: pedir ao usuário para gerar na tela da
+   operação (layout oficial) — `DOCUMENTOS.md`. Pela API, conferir que foram
+   gerados e se há pendências.
 6. Anexar documentos assinados na operação — `ANEXOS.md`, `entidade_tipo: "operacao"`.
 7. Avançar status conforme o andamento, um de cada vez, com confirmação:
    `Aprovada` → `Formalizada` → `Liquidada`.

@@ -8,8 +8,12 @@ valores no servidor** e gravam tudo numa transação. Chamada:
 
 - Títulos com vencimento **antes** da data de referência são ignorados na
   simulação (e **proibidos** na criação).
-- Prazo médio ponderado pelo valor de face, em dias; mínimo de 1 dia no deságio.
-- **Deságio** = bruto × (taxa_mensal ÷ 30 ÷ 100) × prazo_médio
+- **Deságio por título** (mesma regra dos termos aditivos da empresa):
+  - `% do título = dias × taxa_mensal ÷ 30`, arredondado em **3 casas** (mínimo 1 dia)
+  - `juros do título = valor × % ÷ 100`, arredondado em **2 casas**
+  - **Deságio** = soma dos juros de todos os títulos
+  - Ex.: R$ 11.260,00 em 23 dias a 4% a.m. → 3,067% → juros R$ 345,34
+- Prazo médio ponderado (informativo) = Σ(dias × valor) ÷ bruto.
 - **Tarifas** = tarifa_fixa + tarifa_por_titulo × quantidade
 - **Retenção** = bruto × percentual_retencao ÷ 100
 - **Líquido** = bruto − deságio − tarifas − retenção
@@ -46,10 +50,17 @@ Retorno:
   "prazo_medio_ponderado": 30.0,
   "taxa_diaria_equivalente": 0.1166,
   "liquido_invalido": false,
-  "titulos_vencidos_ignorados": []
+  "titulos_vencidos_ignorados": [],
+  "titulos": [
+    { "numero": "NF-1", "valor_face": 10000, "data_vencimento": "2026-10-15",
+      "dias": 30, "percentual": 3.5, "juros": 350.00, "liquido": 9650.00 },
+    { "numero": "NF-2", "valor_face": 10000, "data_vencimento": "2026-10-15",
+      "dias": 30, "percentual": 3.5, "juros": 350.00, "liquido": 9650.00 }
+  ]
 }
 ```
 
+`titulos` traz a linha de cada título válido (a mesma do termo aditivo).
 Não verifica status do título nem cedente — isso é feito na criação.
 
 ## criar_operacao
