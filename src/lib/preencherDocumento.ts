@@ -79,9 +79,9 @@ export function montarPlaceholders(
     empresa_factoring_cnpj: empresa.cnpj,
     empresa_factoring_endereco: empresa.endereco,
 
-    // Contrato master (default; pode ser editado)
-    contrato_master_numero: "CM-2025-001",
-    contrato_master_data: "10/01/2025",
+    // Contrato master: o sistema ainda não cadastra o contrato-geral do
+    // cedente. Sem valor → preencherTexto marca [pendente:…] para revisão
+    // (antes havia um número/data fictícios fixos).
 
     // Cedente
     cedente_razao_social: cedente?.razaoSocial ?? "[cedente]",
@@ -91,7 +91,7 @@ export function montarPlaceholders(
     cedente_representante_cpf: cedente?.cpfResponsavel ?? "[CPF]",
 
     // Operação
-    operacao_numero: operacao.id,
+    operacao_numero: operacao.numero,
     operacao_data: formatBR(operacao.dataOperacao),
     bordero_numero: operacao.numero,
 
@@ -110,8 +110,10 @@ export function montarPlaceholders(
     lista_titulos_bordero: formatarListaTitulosBordero(titulos, sacados),
 
     // Assinatura
-    cidade_assinatura: cedente?.cidade ?? empresa.cidade,
-    data_assinatura: formatBR(new Date().toISOString().slice(0, 10)),
+    // Local e data do instrumento: cidade da empresa (factoring) e data da
+    // operação — como nos documentos emitidos hoje.
+    cidade_assinatura: empresa.cidade,
+    data_assinatura: formatBR(operacao.dataOperacao),
   };
 }
 
